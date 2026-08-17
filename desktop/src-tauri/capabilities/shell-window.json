@@ -8,7 +8,6 @@
     "core:window:allow-close",
     "core:window:allow-minimize",
     "core:webview:allow-create-webview-window",
-    "opener:allow-open-url",
-    "updater:default"
+    "opener:allow-open-url"
   ]
 }

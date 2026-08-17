@@ -55,3 +55,19 @@ _probe.mjs
 desktop/src-tauri/target/
 desktop/src-tauri/gen/
 desktop/node_modules/
+
+# Written by `vercel link`.
+.vercel
+
+# Every real env file. The two committed examples are already tracked, so this
+# does not touch them — but a NEW example would need an exception here.
+.env*
+!.env.example
+!.env.docker.example
+
+# Desktop build artifacts. Binaries do not belong in git: they are 6 MB a piece,
+# they go stale the moment the source moves, and history is forever — as this
+# repository learned the hard way when a placeholder in one commit blocked every
+# push. Ship them from a GitHub Release instead; `npm run build` in desktop/
+# reproduces them.
+dist/
