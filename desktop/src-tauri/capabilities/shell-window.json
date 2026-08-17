@@ -1,0 +1,14 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "shell-window",
+  "description": "IPC for the LOCAL shell window only. The webview that displays a customer's Syncrèse instance is deliberately absent from every capability in this directory, which is what denies it access to the IPC layer entirely.",
+  "windows": ["shell"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-close",
+    "core:window:allow-minimize",
+    "core:webview:allow-create-webview-window",
+    "opener:allow-open-url",
+    "updater:default"
+  ]
+}

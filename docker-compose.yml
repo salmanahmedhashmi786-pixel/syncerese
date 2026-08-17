@@ -1,0 +1,113 @@
+# ---------------------------------------------------------------------------
+# Syncrese — self-hosted deployment.
+#
+#   cp .env.docker.example .env.docker   # then fill it in
+#   docker compose --env-file .env.docker up -d --build
+#
+# Three services, started in order: the database, a migration job that runs to
+# completion, then the application. The app never starts against an unmigrated
+# database, because a Next.js process that boots into a missing table fails one
+# request at a time instead of failing once, loudly.
+#
+# For a single-region EU deployment, run this on EU infrastructure and nothing
+# else needs to change — no part of the schema or the queries assumes a region
+# (see `organizations.region`).
+# ---------------------------------------------------------------------------
+
+name: syncrese
+
+services:
+  db:
+    image: postgres:16-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: syncrese
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      SYNCRESE_OWNER_PASSWORD: ${SYNCRESE_OWNER_PASSWORD:?set SYNCRESE_OWNER_PASSWORD}
+      SYNCRESE_APP_PASSWORD: ${SYNCRESE_APP_PASSWORD:?set SYNCRESE_APP_PASSWORD}
+      # Deterministic collation and encoding. A database created with the
+      # host's locale sorts differently, which changes report ordering between
+      # environments in ways that look like data bugs.
+      POSTGRES_INITDB_ARGS: '--encoding=UTF8 --locale=C'
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      # Runs once, on an empty data directory only.
+      - ./docker/init-roles.sh:/docker-entrypoint-initdb.d/10-roles.sh:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d syncrese']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    # Not published. Nothing outside this network needs to reach Postgres, and
+    # a database port on a public interface is how self-hosted installs get
+    # found. Use `docker compose exec db psql` for a shell.
+    expose:
+      - '5432'
+
+  migrate:
+    build:
+      context: .
+      target: migrator
+    restart: 'no'
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # The OWNER connection, and only here. The app service below does not
+      # receive these credentials.
+      DATABASE_MIGRATION_URL: postgresql://syncrese_owner:${SYNCRESE_OWNER_PASSWORD}@db:5432/syncrese
+      # Traffic never leaves the compose network, so there is no TLS to
+      # terminate. Point DATABASE_URL at a database outside this network and
+      # this must change.
+      DATABASE_SSL: 'false'
+
+  app:
+    build:
+      context: .
+      target: runner
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgresql://syncrese_app:${SYNCRESE_APP_PASSWORD}@db:5432/syncrese
+      DATABASE_SSL: 'false'
+      ALLOW_INSECURE_DB_CONNECTION: 'true' # acknowledged: private network only
+      AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET}
+      AUTH_URL: ${AUTH_URL:?set AUTH_URL}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?set ENCRYPTION_KEY}
+      LICENSE_KEY_PEPPER: ${LICENSE_KEY_PEPPER:?set LICENSE_KEY_PEPPER}
+      CRON_SECRET: ${CRON_SECRET:-}
+      SIGNUP_MODE: ${SIGNUP_MODE:-closed}
+      # This compose file has no reverse proxy. If you put one in front, set
+      # this back to "true" — and make sure it OVERWRITES x-forwarded-for
+      # rather than appending to it.
+      TRUST_PROXY_HEADERS: 'false'
+    ports:
+      - '${APP_PORT:-3000}:3000'
+
+  # Webhook delivery. Next.js has no daemon, so the outbox is drained by a
+  # scheduled call rather than a background worker. Runs only if you asked for
+  # it: `docker compose --profile webhooks up -d`.
+  dispatch:
+    image: curlimages/curl:8.11.1
+    restart: unless-stopped
+    profiles: ['webhooks']
+    depends_on:
+      app:
+        condition: service_started
+    environment:
+      CRON_SECRET: ${CRON_SECRET:?webhook delivery needs CRON_SECRET}
+    entrypoint:
+      - sh
+      - -c
+      - >
+        while true; do
+          curl -fsS -X POST -H "authorization: Bearer $$CRON_SECRET"
+          http://app:3000/api/internal/dispatch > /dev/null || true;
+          sleep 60;
+        done
+
+volumes:
+  db-data:

@@ -1,0 +1,83 @@
+/* The shell window only. Deliberately self-contained: this page ships inside
+   the binary and must render before, and without, any network. */
+:root {
+  --bg: #fbfbfa;
+  --fg: #1c1d1f;
+  --mut: #6b6f76;
+  --bd: #e3e3e0;
+  --acc: #0f766e; /* Syncrèse teal */
+  --neg: #b42318;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17181a;
+    --fg: #eceded;
+    --mut: #9aa0a6;
+    --bd: #2c2e31;
+    --acc: #2dd4bf;
+    --neg: #f97066;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+.shell { padding: 34px 34px 26px; }
+.mark { color: var(--acc); margin-bottom: 10px; }
+h1 { font-size: 19px; letter-spacing: -0.02em; margin: 0 0 2px; }
+.sub { color: var(--mut); margin: 0 0 22px; }
+label {
+  display: block;
+  font: 500 9.5px ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.07em;
+  color: var(--mut);
+  margin-bottom: 6px;
+}
+input {
+  width: 100%;
+  height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--bd);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  outline: none;
+  user-select: text;
+}
+input:focus { border-color: var(--acc); }
+#code { font: 15px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.12em; }
+.hint { color: var(--mut); font-size: 11.5px; margin: 6px 0 18px; }
+.error {
+  color: var(--neg);
+  font-size: 12px;
+  margin: 0 0 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--neg);
+  border-radius: 6px;
+}
+button {
+  width: 100%;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: var(--acc);
+  color: #fff;
+  font: 600 13px inherit;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.6; cursor: default; }
+.foot {
+  color: var(--mut);
+  font-size: 11px;
+  line-height: 1.55;
+  margin: 20px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--bd);
+}

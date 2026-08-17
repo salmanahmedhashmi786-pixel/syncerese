@@ -1,0 +1,35 @@
+# Build context hygiene. Anything here would otherwise be uploaded to the
+# daemon and, worse, could end up in an image layer.
+
+node_modules
+.next
+.git
+.syncrese-dev
+
+# secrets — an .env file copied into an image is in every registry it reaches
+.env
+.env.local
+.env.*.local
+.env.production
+*.pem
+*.key
+*.p12
+*.pfx
+certs/
+secrets/
+
+# not part of the server image
+desktop/
+docs/
+tests/
+assets/
+*.zip
+ERP prompt files new/
+*.jpg
+*.png
+!public/**
+
+coverage/
+*.tsbuildinfo
+*.log
+tmp/

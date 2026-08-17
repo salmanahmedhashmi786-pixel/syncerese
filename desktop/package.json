@@ -1,0 +1,14 @@
+{
+  "name": "syncrese-desktop",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Syncrese desktop shell — a Tauri v2 wrapper around a deployed Syncrese instance",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "rust:test": "cd src-tauri && cargo test"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

@@ -1,0 +1,57 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# next
+.next/
+out/
+build/
+next-env.d.ts
+
+# secrets — MUST DO #18: no secrets in source control, ever
+.env
+.env.local
+.env.*.local
+.env.production
+.env.docker
+.env.vercel
+*.pem
+*.key
+*.p12
+*.pfx
+*.mobileprovision
+secrets/
+
+# desktop signing material (phase 9)
+certs/
+*.jks
+*.keystore
+
+# test / build output
+coverage/
+.vitest/
+*.tsbuildinfo
+
+# editor / os
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
+npm-debug.log*
+
+# local scratch
+tmp/
+_probe.mjs
+
+# embedded local dev database
+.syncrese-dev/
+
+# Desktop shell (Tauri)
+desktop/src-tauri/target/
+desktop/src-tauri/gen/
+desktop/node_modules/

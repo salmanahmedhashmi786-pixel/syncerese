@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * Runtime theme defaults. The provider overwrites these on the app root from
+ * the user's server-persisted preferences; they are declared here so the first
+ * paint is correct rather than flashing an unthemed frame.
+ *
+ * Defaults are the Syncrèse accent in light mode at compact density.
+ */
+:root {
+  --ac: #2a7b94;
+  --acs: rgba(42, 123, 148, 0.12);
+  --bg: #f6f7f9;
+  --pnl: #ffffff;
+  --fg: #14181f;
+  --mut: #6b7382;
+  --bd: #e3e6eb;
+  --hov: rgba(0, 0, 0, 0.028);
+  --track: rgba(0, 0, 0, 0.06);
+  --nav: #111725;
+  --cy: 6px;
+  --fs: 12.5px;
+}
+
+@layer base {
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans), system-ui, sans-serif;
+    font-size: var(--fs);
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  /* 9px, thumb rgba(128,138,157,.35) radius 6, transparent track. */
+  ::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(128, 138, 157, 0.35);
+    border-radius: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* Keyboard focus must stay visible — the handoff's dense controls are easy to
+     lose track of without it. Pointer focus is suppressed, not keyboard. */
+  :focus-visible {
+    outline: 2px solid var(--ac);
+    outline-offset: 1px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

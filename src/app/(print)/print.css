@@ -1,0 +1,239 @@
+/*
+ * The printed invoice.
+ *
+ * Written for paper first and screen second, which is the opposite of the rest
+ * of this application. Everything here is in millimetres and points rather than
+ * the app's pixel scale, because the output is a physical A4 page and a customer
+ * may hold it next to one from their previous system.
+ *
+ * NO DARK MODE, NO THEME TOKENS. A themed invoice is a printer full of ink and
+ * a document that looks different depending on when it was printed. `print-color-adjust`
+ * is deliberately absent for the same reason: backgrounds should drop out.
+ */
+
+:root {
+  --ink: #111;
+  --mut: #666;
+  --rule: #ddd;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #f4f4f2;
+  color: var(--ink);
+  font: 10pt/1.45 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tabular figures, so a column of amounts lines up on the decimal point. Without
+   this the units drift and the total looks like it belongs to a different row. */
+.num,
+.lines td.r,
+.totals .num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+.sheet {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 12mm auto;
+  padding: 18mm 18mm 16mm;
+  background: #fff;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.12);
+}
+
+/* --- header --------------------------------------------------------------- */
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12mm;
+  margin-bottom: 12mm;
+}
+
+.head h1 {
+  margin: 0 0 1mm;
+  font-size: 15pt;
+  letter-spacing: -0.01em;
+}
+
+.doctype {
+  font-size: 14pt;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mut {
+  color: var(--mut);
+  font-size: 8.5pt;
+}
+
+.label {
+  font-size: 7.5pt;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mut);
+  margin-bottom: 1.5mm;
+}
+
+.strong {
+  font-weight: 600;
+}
+
+/* --- parties -------------------------------------------------------------- */
+
+.parties {
+  display: flex;
+  justify-content: space-between;
+  gap: 12mm;
+  margin-bottom: 10mm;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 1mm 6mm;
+  margin: 0;
+  min-width: 70mm;
+}
+
+.facts dt {
+  font-size: 7.5pt;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mut);
+  align-self: baseline;
+}
+
+.facts dd {
+  margin: 0;
+  text-align: right;
+}
+
+/* --- lines ---------------------------------------------------------------- */
+
+.lines {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 8mm;
+}
+
+.lines th {
+  font-size: 7.5pt;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mut);
+  text-align: left;
+  font-weight: 600;
+  padding: 0 2mm 1.5mm 0;
+  border-bottom: 0.6pt solid var(--ink);
+}
+
+.lines td {
+  padding: 2mm 2mm 2mm 0;
+  border-bottom: 0.4pt solid var(--rule);
+  vertical-align: top;
+}
+
+.lines .r,
+.lines th.r {
+  text-align: right;
+  padding-right: 0;
+}
+
+.lines th:last-child,
+.lines td:last-child {
+  padding-right: 0;
+}
+
+/* --- totals --------------------------------------------------------------- */
+
+.totals {
+  margin-left: auto;
+  width: 78mm;
+}
+
+.totals .row {
+  display: flex;
+  justify-content: space-between;
+  gap: 6mm;
+  padding: 1mm 0;
+}
+
+.totals .strong {
+  font-weight: 600;
+  font-size: 11pt;
+  border-top: 0.6pt solid var(--ink);
+  margin-top: 1mm;
+  padding-top: 1.5mm;
+}
+
+/* --- payment and notes ---------------------------------------------------- */
+
+.pay {
+  margin-top: 10mm;
+  padding-top: 4mm;
+  border-top: 0.4pt solid var(--rule);
+}
+
+.notes {
+  margin-top: 8mm;
+  color: var(--mut);
+  font-size: 9pt;
+}
+
+.notes p {
+  margin: 0 0 2mm;
+}
+
+/* --- print ---------------------------------------------------------------- */
+
+@page {
+  size: A4;
+  /* The sheet supplies its own padding, so the page margin is zero. Setting
+     both would push the content in twice and cost a line at the bottom. */
+  margin: 0;
+}
+
+@media print {
+  html,
+  body {
+    background: #fff;
+  }
+
+  .sheet {
+    width: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 15mm 15mm 12mm;
+    box-shadow: none;
+  }
+
+  /* A row split across a page break puts a description on one sheet and its
+     amount on the next, which is how a customer ends up querying an invoice
+     that is arithmetically fine. */
+  .lines tr,
+  .totals,
+  .pay {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Repeat the column headings on every sheet of a long invoice. */
+  .lines thead {
+    display: table-header-group;
+  }
+
+  /* The totals must never be orphaned onto a page of their own. */
+  .totals {
+    break-before: avoid;
+  }
+}

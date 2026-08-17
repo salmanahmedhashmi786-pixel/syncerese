@@ -1,0 +1,62 @@
+name: Drain the event outbox
+
+# WHY THIS EXISTS
+#
+# `/api/internal/dispatch` is what turns queued events into webhook deliveries
+# and Slack/Teams messages. It needs calling often. Vercel's Hobby plan allows
+# only DAILY cron jobs and rejects the whole deployment if vercel.json asks for
+# anything faster — so the minute-tick lives here instead of in vercel.json.
+#
+# On Pro, delete this workflow and put the cron back in vercel.json:
+#   { "path": "/api/internal/dispatch", "schedule": "* * * * *" }
+#
+# WHAT THIS IS NOT
+#
+# GitHub's scheduler is best-effort. Five minutes is the floor, runs are
+# routinely late by ten or more under load, and some are dropped entirely. It is
+# adequate for a Hobby deployment and is NOT adequate for a customer who has
+# been promised timely webhooks. For that, use Pro's cron or a paid scheduler.
+#
+# Scheduled workflows are also disabled automatically after 60 days without a
+# commit to the repository — at which point delivery stops silently, the API
+# keeps working, and nothing anywhere says so.
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # so you can force a drain from the Actions tab
+
+# Two overlapping runs would just race for the same rows and one would find
+# nothing; harmless, but pointless. Newer wins, older is dropped.
+concurrency:
+  group: outbox-dispatch
+  cancel-in-progress: true
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call the dispatch endpoint
+        env:
+          BASE_URL: ${{ secrets.SYNCRESE_BASE_URL }}
+          CRON_SECRET: ${{ secrets.SYNCRESE_CRON_SECRET }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${BASE_URL:-}" ] || [ -z "${CRON_SECRET:-}" ]; then
+            echo "SYNCRESE_BASE_URL and SYNCRESE_CRON_SECRET must both be set" \
+                 "as repository secrets." >&2
+            exit 1
+          fi
+
+          # -sS keeps the body but drops the progress meter; the body is a JSON
+          # summary of what was dispatched and is worth having in the log.
+          # --fail-with-body makes a 4xx/5xx a failed run WITHOUT hiding why.
+          curl -sS --fail-with-body \
+               --max-time 60 \
+               --retry 2 --retry-delay 5 --retry-connrefused \
+               -H "authorization: Bearer ${CRON_SECRET}" \
+               "${BASE_URL%/}/api/internal/dispatch"
+
+          echo # the endpoint does not end its body with a newline

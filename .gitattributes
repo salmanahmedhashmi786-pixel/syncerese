@@ -1,0 +1,15 @@
+# Scripts that run inside Linux containers must keep LF endings. Checked out
+# with CRLF on a Windows machine, docker/init-roles.sh fails in the Postgres
+# entrypoint with "no such file or directory" — which names the interpreter,
+# not the line endings, and costs an afternoon.
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+drizzle/*.sql text eol=lf
+
+# Never let a merge driver touch these.
+package-lock.json -diff
+*.jpg binary
+*.png binary
+*.zip binary

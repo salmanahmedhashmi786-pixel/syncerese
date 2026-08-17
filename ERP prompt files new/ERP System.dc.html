@@ -1,0 +1,1846 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;padding:0}
+body{background:#f6f7f9;-webkit-font-smoothing:antialiased}
+a{color:#2563eb;text-decoration:none}
+a:hover{color:#1d4ed8}
+*{box-sizing:border-box}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:rgba(128,138,157,.35);border-radius:6px}
+::-webkit-scrollbar-track{background:transparent}
+@keyframes dcin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes dcslide{from{transform:translateX(18px);opacity:0}to{transform:none;opacity:1}}
+</style>
+</helmet>
+<div style="{{ themeVars }}">
+<div style="display:flex;align-items:stretch;min-height:100vh;background:var(--bg,#f6f7f9);color:var(--fg,#14181f);font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:var(--fs,13px);line-height:1.45">
+
+  <aside style="{{ sidebarStyle }}">
+    <div style="display:flex;align-items:center;gap:10px;padding:0 14px;height:52px;flex:none;border-bottom:1px solid rgba(255,255,255,.07)">
+      <div style="width:26px;height:26px;flex:none;border-radius:6px;background:var(--ac,#2563eb);display:flex;align-items:center;justify-content:center;font:600 11px 'IBM Plex Mono',monospace;color:#fff">N</div>
+      <sc-if value="{{ showLabels }}" hint-placeholder-val="{{ true }}">
+        <div style="min-width:0">
+          <div style="font-weight:600;font-size:13px;color:#fff;letter-spacing:-.01em;white-space:nowrap">{{ brandName }}</div>
+          <div style="font:400 10px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.4);white-space:nowrap">ERP · EU-CENTRAL</div>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="flex:1;overflow-x:hidden;overflow-y:auto;padding:10px 8px">
+      <sc-for list="{{ navGroups }}" as="g" hint-placeholder-count="4">
+        <div style="margin-bottom:12px">
+          <sc-if value="{{ showLabels }}" hint-placeholder-val="{{ true }}">
+            <div style="font:500 9.5px 'IBM Plex Mono',monospace;letter-spacing:.09em;color:rgba(255,255,255,.32);padding:6px 8px 5px">{{ g.label }}</div>
+          </sc-if>
+          <div style="display:flex;flex-direction:column;gap:1px">
+            <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="3">
+              <div style="{{ it.style }}" onClick="{{ it.onClick }}" title="{{ it.label }}">
+                <span style="{{ it.glyphStyle }}">{{ it.code }}</span>
+                <sc-if value="{{ showLabels }}" hint-placeholder-val="{{ true }}">
+                  <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.label }}</span>
+                </sc-if>
+                <sc-if value="{{ it.showBadge }}" hint-placeholder-val="{{ false }}">
+                  <span style="margin-left:auto;font:500 9.5px 'IBM Plex Mono',monospace;background:rgba(255,255,255,.12);color:rgba(255,255,255,.75);padding:1px 5px;border-radius:9px">{{ it.badge }}</span>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="flex:none;padding:8px;border-top:1px solid rgba(255,255,255,.07);display:flex;gap:6px">
+      <div onClick="{{ toggleCollapse }}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;height:30px;border-radius:6px;cursor:pointer;color:rgba(255,255,255,.55);font:500 11px 'IBM Plex Mono',monospace;background:rgba(255,255,255,.05)">{{ collapseLabel }}</div>
+    </div>
+  </aside>
+
+  <main style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <header style="flex:none;height:52px;display:flex;align-items:center;gap:12px;padding:0 18px;background:var(--pnl,#fff);border-bottom:1px solid var(--bd,#e3e6eb);position:sticky;top:0;z-index:20">
+      <div style="flex:1 1 auto;min-width:0;overflow:hidden">
+        <div style="font-weight:600;font-size:14.5px;letter-spacing:-.015em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ modTitle }}</div>
+        <div style="font:400 10.5px 'IBM Plex Mono',monospace;color:var(--mut,#6b7382);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ modSub }}</div>
+      </div>
+
+      <sc-if value="{{ isTable }}" hint-placeholder-val="{{ false }}">
+        <div style="position:relative;display:flex;align-items:center">
+          <span style="position:absolute;left:9px;font:400 11px 'IBM Plex Mono',monospace;color:var(--mut,#6b7382);pointer-events:none">/</span>
+          <input value="{{ q }}" onChange="{{ onSearch }}" placeholder="Search records…" style="{{ searchStyle }}">
+        </div>
+      </sc-if>
+
+      <div onClick="{{ toggleDark }}" title="Light / dark" style="{{ iconBtnStyle }}">{{ darkGlyph }}</div>
+      <div onClick="{{ toggleChat }}" style="{{ askBtnStyle }}"><span style="font-size:11px">✦</span>Ask ERP</div>
+      <div onClick="{{ openCustomize }}" style="{{ customizeBtnStyle }}">Customize</div>
+      <sc-if value="{{ isTable }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ openModal }}" style="{{ primaryBtnStyle }}">+ New</div>
+      </sc-if>
+      <div style="width:28px;height:28px;border-radius:50%;background:var(--acs,rgba(37,99,235,.12));color:var(--ac,#2563eb);display:flex;align-items:center;justify-content:center;font:600 10.5px 'IBM Plex Mono',monospace;flex:none">LK</div>
+    </header>
+
+    <div style="flex:1;min-width:0;padding:16px 18px 40px">
+
+      <sc-if value="{{ hasCharts }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:12px;margin-bottom:12px;align-items:stretch">
+          <sc-for list="{{ charts }}" as="c" hint-placeholder-count="4">
+            <div style="{{ c.style }}">
+              <div style="padding:11px 13px 0;min-width:0">
+                <div style="font-weight:600;font-size:12.5px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.label }}</div>
+                <div style="font:400 10px 'IBM Plex Mono',monospace;color:var(--mut,#6b7382);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px">{{ c.note }}</div>
+              </div>
+
+              <sc-if value="{{ c.isStat }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:8px 13px 14px">
+                  <div style="font-weight:600;font-size:26px;letter-spacing:-.03em">{{ c.value }}</div>
+                  <div style="{{ c.deltaStyle }}">{{ c.delta }}</div>
+                  <svg viewBox="0 0 200 46" preserveAspectRatio="none" style="width:100%;height:46px;display:block;margin-top:10px">
+                    <polyline points="{{ c.sparkArea }}" fill="{{ c.softFill }}" stroke="none"></polyline>
+                    <polyline points="{{ c.spark }}" fill="none" stroke="{{ c.stroke }}" stroke-width="2" stroke-linejoin="round"></polyline>
+                  </svg>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ c.isBars }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ c.barsWrapStyle }}">
+                  <sc-for list="{{ c.bars }}" as="b" hint-placeholder-count="8">
+                    <div onMouseEnter="{{ b.onEnter }}" onMouseLeave="{{ b.onLeave }}" style="flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px;position:relative;min-width:0">
+                      <sc-if value="{{ b.hot }}" hint-placeholder-val="{{ false }}">
+                        <div style="{{ tipStyle }}">{{ b.tip }}</div>
+                      </sc-if>
+                      <div style="{{ b.barStyle }}"></div>
+                      <div style="font:400 9px 'IBM Plex Mono',monospace;color:var(--mut,#6b7382);white-space:nowrap">{{ b.label }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ c.isHbars }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:13px 13px 14px;display:flex;flex-direction:column;gap:9px">
+                  <sc-for list="{{ c.hbars }}" as="h" hint-placeholder-count="5">
+                    <div>
+                      <div style="display:flex;justify-content:space-between;gap:10px;font-size:11.5px;margin-bottom:4px">
+                        <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ h.label }}</span>
+                        <span style="font:500 11px 'IBM Plex Mono',monospace;color:var(--mut,#6b7382);flex:none">{{ h.right }}</span>
+                      </div>
+                      <div style="height:7px;border-radius:4px;background:var(--track,rgba(0,0,0,.06));overflow:hidden"><div style="{{ h.fillStyle }}"></div></div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ c.isDonut }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:12px 13px 14px;display:flex;flex-direction:column;align-items:center;gap:12px">
+                  <div style="position:relative;flex:none;width:112px;height:112px">
+                    <svg viewBox="0 0 140 140" style="width:112px;height:112px;transform:rotate(-90deg)">
+                      <circle cx="70" cy="70" r="54" fill="none" stroke="{{ c.trackColor }}" stroke-width="21"></circle>
+                      <sc-for list="{{ c.segs }}" as="s" hint-placeholder-count="4">
+                        <circle cx="70" cy="70" r="54" fill="none" stroke="{{ s.color }}" stroke-width="21" stroke-dasharray="{{ s.dash }}" stroke-dashoffset="{{ s.offset }}"></circle>
+                      </sc-for>
+                    </svg>
+                    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+                      <div style="font-weight:600;font-size:17px;letter-spacing:-.02em">{{ c.centerValue }}</div>
+                      <div style="font:400 9px 'IBM Plex Mono',monospace;color:var(--mut,#6b7382);letter-spacing:.06em">{{ c.centerLabel }}</div>
+                    </div>
+                  </div>
+                  <div style="width:100%;min-width:0;display:flex;flex-direction:column;gap:6px">
+                    <sc-for list="{{ c.segs }}" as="s" hint-placeholder-count="4">
+                      <div style="display:flex;align-items:center;gap:8px;font-size:11.5px">
+                        <span style="{{ s.dotStyle }}"></span>
+                        <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.label }}</span>
+                        <span style="font:500 10.5px 'IBM Plex Mono',monospace;color:var(--mut,#6b7382);flex:none;white-space:nowrap">{{ s.right }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ c.isLine }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:12px 13px 12px">
+                  <svg viewBox="0 0 600 190" preserveAspectRatio="none" style="width:100%;height:{{ c.lineH }};display:block">
+                    <sc-for list="{{ c.gridY }}" as="g" hint-placeholder-count="4">
+                      <line x1="0" y1="{{ g }}" x2="600" y2="{{ g }}" stroke="{{ c.gridColor }}" stroke-width="1"></line>
+                    </sc-for>
+                    <polyline points="{{ c.area }}" fill="{{ c.softFill }}" stroke="none"></polyline>
+                    <polyline points="{{ c.line }}" fill="none" stroke="{{ c.stroke }}" stroke-width="2.5" stroke-linejoin="round"></polyline>
+                    <sc-if value="{{ c.hasLine2 }}" hint-placeholder-val="{{ false }}">
+                      <polyline points="{{ c.line2 }}" fill="none" stroke="{{ c.stroke2 }}" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round"></polyline>
+                    </sc-if>
+                  </svg>
+                  <div style="display:flex;justify-content:space-between;font:400 9px 'IBM Plex Mono',monospace;color:var(--mut,#6b7382);margin-top:6px">
+                    <sc-for list="{{ c.xLabels }}" as="m" hint-placeholder-count="12"><span>{{ m }}</span></sc-for>
+                  </div>
+                  <sc-if value="{{ c.hasLegend }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;gap:14px;margin-top:9px">
+                      <sc-for list="{{ c.legend }}" as="l" hint-placeholder-count="2">
+                        <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--mut,#6b7382)"><span style="{{ l.dotStyle }}"></span>{{ l.label }}</div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ c.isHeat }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:12px 13px 14px">
+                  <div style="display:flex;gap:10px">
+                    <div style="display:flex;flex-direction:column;gap:4px;padding-top:14px;flex:none">
+                      <sc-for list="{{ c.rowLabels }}" as="r" hint-placeholder-count="5">
+                        <div style="height:19px;display:flex;align-items:center;font:400 9px 'IBM Plex Mono',monospace;color:var(--mut,#6b7382)">{{ r }}</div>
+                      </sc-for>
+                    </div>
+                    <div style="flex:1;min-width:0">
+                      <div style="{{ c.heatHeadStyle }}">
+                        <sc-for list="{{ c.colLabels }}" as="h" hint-placeholder-count="8">
+                          <div style="text-align:center;font:400 9px 'IBM Plex Mono',monospace;color:var(--mut,#6b7382)">{{ h }}</div>
+                        </sc-for>
+                      </div>
+                      <div style="{{ c.heatGridStyle }}">
+                        <sc-for list="{{ c.cells }}" as="cell" hint-placeholder-count="40">
+                          <div title="{{ cell.tip }}" style="{{ cell.style }}"></div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:6px;margin-top:11px;font:400 9px 'IBM Plex Mono',monospace;color:var(--mut,#6b7382)">
+                    <span>LOW</span>
+                    <sc-for list="{{ c.scale }}" as="s" hint-placeholder-count="5"><span style="{{ s }}"></span></sc-for>
+                    <span>HIGH</span>
+                  </div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ c.isStack }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:13px 13px 14px;display:flex;flex-direction:column;gap:11px">
+                  <sc-for list="{{ c.stacks }}" as="st" hint-placeholder-count="4">
+                    <div>
+                      <div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:5px"><span>{{ st.label }}</span><span style="font:500 11px 'IBM Plex Mono',monospace;color:var(--mut,#6b7382)">{{ st.right }}</span></div>
+                      <div style="display:flex;height:9px;border-radius:5px;overflow:hidden;background:var(--track,rgba(0,0,0,.06))">
+                        <sc-for list="{{ st.parts }}" as="p" hint-placeholder-count="3">
+                          <div title="{{ p.tip }}" style="{{ p.style }}"></div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-for>
+                  <div style="display:flex;gap:13px;flex-wrap:wrap;margin-top:2px">
+                    <sc-for list="{{ c.legend }}" as="l" hint-placeholder-count="3">
+                      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--mut,#6b7382)"><span style="{{ l.dotStyle }}"></span>{{ l.label }}</div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+
+      <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div style="font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:var(--mut,#6b7382)">WIDGET LAYOUT</div>
+            <div onClick="{{ toggleLayoutEdit }}" style="{{ chipBtnStyle }}">{{ layoutEditLabel }}</div>
+            <sc-if value="{{ layoutEdit }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <sc-for list="{{ hiddenWidgets }}" as="w" hint-placeholder-count="0">
+                  <div onClick="{{ w.onShow }}" style="{{ w.chipStyle }}">+ {{ w.label }}</div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:12px;align-items:start">
+            <sc-for list="{{ widgets }}" as="w" hint-placeholder-count="5">
+              <div style="{{ w.style }}">
+                <div style="display:flex;align-items:flex-start;gap:8px;padding:11px 13px 0">
+                  <div style="min-width:0;flex:1 1 auto;overflow:hidden">
+                    <div style="font-weight:600;font-size:12.5px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ w.label }}</div>
+                    <div style="font:400 10px 'IBM Plex Mono',monospace;color:var(--mut,#6b7382);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px">{{ w.note }}</div>
+                  </div>
+                  <sc-if value="{{ layoutEdit }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;gap:4px">
+                      <span onClick="{{ w.onLeft }}" style="{{ w.microBtn }}">◀</span>
+                      <span onClick="{{ w.onRight }}" style="{{ w.microBtn }}">▶</span>
+                      <span onClick="{{ w.onWide }}" style="{{ w.microBtn }}">↔</span>
+                      <span onClick="{{ w.onHide }}" style="{{ w.microBtn }}">✕</span>
+                    </div>
+                  </sc-if>
+                </div>
+
+                <sc-if value="{{ w.isKpis }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--bd,#e3e6eb);margin-top:11px;border-top:1px solid var(--bd,#e3e6eb)">
+                    <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+                      <div style="background:var(--pnl,#fff);padding:13px 14px 15px">
+                        <div style="font:500 9.5px 'IBM Plex Mono',monospace;letter-spacing:.07em;color:var(--mut,#6b7382)">{{ k.label }}</div>
+                        <div style="font-weight:600;font-size:22px;letter-spacing:-.025em;margin-top:5px">{{ k.value }}</div>
+                        <div style="{{ k.deltaStyle }}">{{ k.delta }}<span style="color:var(--mut,#6b7382);font-weight:400"> vs last month</span></div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ w.isBars }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:16px 13px 12px;display:flex;align-items:flex-end;gap:{{ w.barGap }};height:170px">
+                    <sc-for list="{{ w.bars }}" as="b" hint-placeholder-count="12">
+                      <div onMouseEnter="{{ b.onEnter }}" onMouseLeave="{{ b.onLeave }}" style="flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px;position:relative;cursor:default">
+                        <sc-if value="{{ b.hot }}" hint-placeholder-val="{{ false }}">
+                          <div style="{{ tipStyle }}">{{ b.tip }}</div>
+                        </sc-if>
+                        <div style="{{ b.barStyle }}"></div>
+                        <div style="font:400 9.5px 'IBM Plex Mono',monospace;color:var(--mut,#6b7382)">{{ b.label }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ w.isPipeline }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:14px 13px 13px;display:flex;flex-direction:column;gap:9px">
+                    <sc-for list="{{ pipeline }}" as="p" hint-placeholder-count="5">
+                      <div>
+                        <div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:4px">
+                          <span>{{ p.label }}</span>
+                          <span style="font:500 11px 'IBM Plex Mono',monospace;color:var(--mut,#6b7382)">{{ p.right }}</span>
+                        </div>
+                        <div style="height:7px;border-radius:4px;background:var(--track,rgba(0,0,0,.06));overflow:hidden">
+                          <div style="{{ p.fillStyle }}"></div>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ w.isList }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:8px 0 4px">
+                    <sc-for list="{{ w.items }}" as="r" hint-placeholder-count="6">
+                      <div onClick="{{ r.onClick }}" style="display:flex;align-items:center;gap:10px;padding:7px 13px;cursor:pointer" style-hover="background:var(--hov,rgba(0,0,0,.03))">
+                        <div style="{{ r.dotStyle }}"></div>
+                        <div style="min-width:0;flex:1">
+                          <div style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.title }}</div>
+                          <div style="font:400 10px 'IBM Plex Mono',monospace;color:var(--mut,#6b7382)">{{ r.sub }}</div>
+                        </div>
+                        <div style="{{ r.rightStyle }}">{{ r.right }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isReports }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:12px;align-items:start">
+          <div style="grid-column:span 7;background:var(--pnl,#fff);border:1px solid var(--bd,#e3e6eb);border-radius:8px">
+            <div style="padding:12px 14px;border-bottom:1px solid var(--bd,#e3e6eb);font-weight:600;font-size:12.5px">Gross margin trend · 12 months</div>
+            <div style="padding:14px">
+              <svg viewBox="0 0 600 200" preserveAspectRatio="none" style="width:100%;height:200px;display:block">
+                <polyline points="{{ marginArea }}" fill="var(--acs,rgba(37,99,235,.12))" stroke="none"></polyline>
+                <polyline points="{{ marginLine }}" fill="none" stroke="var(--ac,#2563eb)" stroke-width="2.5" stroke-linejoin="round"></polyline>
+              </svg>
+              <div style="display:flex;justify-content:space-between;font:400 9.5px 'IBM Plex Mono',monospace;color:var(--mut,#6b7382);margin-top:6px">
+                <sc-for list="{{ months }}" as="m" hint-placeholder-count="12"><span>{{ m }}</span></sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="grid-column:span 5;background:var(--pnl,#fff);border:1px solid var(--bd,#e3e6eb);border-radius:8px">
+            <div style="padding:12px 14px;border-bottom:1px solid var(--bd,#e3e6eb);font-weight:600;font-size:12.5px">Revenue by country</div>
+            <div style="padding:13px 14px;display:flex;flex-direction:column;gap:10px">
+              <sc-for list="{{ regions }}" as="p" hint-placeholder-count="6">
+                <div>
+                  <div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:4px"><span>{{ p.label }}</span><span style="font:500 11px 'IBM Plex Mono',monospace;color:var(--mut,#6b7382)">{{ p.right }}</span></div>
+                  <div style="height:7px;border-radius:4px;background:var(--track,rgba(0,0,0,.06));overflow:hidden"><div style="{{ p.fillStyle }}"></div></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:760px;background:var(--pnl,#fff);border:1px solid var(--bd,#e3e6eb);border-radius:8px;padding:18px 20px 22px">
+          <div style="font-weight:600;font-size:14px;margin-bottom:3px">Appearance &amp; workspace</div>
+          <div style="color:var(--mut,#6b7382);font-size:12px;margin-bottom:18px">Every setting below applies live across all modules and persists for this session.</div>
+          <div style="display:flex;flex-direction:column;gap:20px">
+            <sc-for list="{{ settingGroups }}" as="g" hint-placeholder-count="6">
+              <div>
+                <div style="font:500 9.5px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:var(--mut,#6b7382);margin-bottom:8px">{{ g.label }}</div>
+                <sc-if value="{{ g.isSwatch }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;gap:9px;flex-wrap:wrap">
+                    <sc-for list="{{ g.swatches }}" as="s" hint-placeholder-count="6">
+                      <div onClick="{{ s.onClick }}" title="{{ s.label }}" style="{{ s.style }}">{{ s.mark }}</div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ g.isSeg }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ g.segWrapStyle }}">
+                    <sc-for list="{{ g.segs }}" as="s" hint-placeholder-count="3">
+                      <div onClick="{{ s.onClick }}" style="{{ s.style }}">{{ s.label }}</div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ g.isSlider }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;align-items:center;gap:11px">
+                    <input type="range" min="{{ g.min }}" max="{{ g.max }}" step="{{ g.step }}" value="{{ g.value }}" onChange="{{ g.onChange }}" style="{{ g.sliderStyle }}">
+                    <span style="font:500 11px 'IBM Plex Mono',monospace;color:var(--mut,#6b7382);min-width:44px">{{ g.readout }}</span>
+                  </div>
+                </sc-if>
+                <div style="font-size:11px;color:var(--mut,#6b7382);margin-top:7px">{{ g.hint }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isTable }}" hint-placeholder-val="{{ true }}">
+        <div style="background:var(--pnl,#fff);border:1px solid var(--bd,#e3e6eb);border-radius:8px;overflow:visible">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 11px;border-bottom:1px solid var(--bd,#e3e6eb);flex-wrap:wrap">
+            <sc-for list="{{ filters }}" as="f" hint-placeholder-count="4">
+              <div onClick="{{ f.onClick }}" style="{{ f.style }}">{{ f.label }}<span style="opacity:.55;margin-left:5px;font-family:'IBM Plex Mono',monospace">{{ f.count }}</span></div>
+            </sc-for>
+            <div style="flex:1"></div>
+            <div style="position:relative">
+              <div onClick="{{ toggleColMenu }}" style="{{ chipBtnStyle }}">Columns ({{ visibleCount }})</div>
+              <sc-if value="{{ colMenu }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;right:0;top:30px;z-index:40;background:var(--pnl,#fff);border:1px solid var(--bd,#e3e6eb);border-radius:8px;box-shadow:0 12px 30px rgba(0,0,0,.16);padding:6px;min-width:190px;animation:dcin .12s ease">
+                  <sc-for list="{{ colToggles }}" as="c" hint-placeholder-count="5">
+                    <div onClick="{{ c.onClick }}" style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:5px;cursor:pointer;font-size:12px" style-hover="background:var(--hov,rgba(0,0,0,.03))">
+                      <span style="{{ c.boxStyle }}">{{ c.mark }}</span>{{ c.label }}
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+
+          <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ bulkBarStyle }}">
+              <span style="font-weight:600">{{ selCount }} selected</span>
+              <div style="flex:1"></div>
+              <div onClick="{{ bulkApprove }}" style="{{ bulkBtnStyle }}">Approve</div>
+              <div onClick="{{ bulkExport }}" style="{{ bulkBtnStyle }}">Export CSV</div>
+              <div onClick="{{ bulkDelete }}" style="{{ bulkBtnStyle }}">Delete</div>
+              <div onClick="{{ clearSel }}" style="{{ bulkBtnStyle }}">Clear</div>
+            </div>
+          </sc-if>
+
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;min-width:900px">
+              <thead>
+                <tr>
+                  <th style="{{ checkHeadStyle }}"><span onClick="{{ toggleAll }}" style="{{ allBoxStyle }}">{{ allMark }}</span></th>
+                  <sc-for list="{{ heads }}" as="h" hint-placeholder-count="6">
+                    <th onClick="{{ h.onClick }}" style="{{ h.style }}">{{ h.label }}<span style="opacity:.85;margin-left:5px">{{ h.arrow }}</span></th>
+                  </sc-for>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{ rows }}" as="r" hint-placeholder-count="10">
+                  <tr style="{{ r.style }}">
+                    <td style="{{ r.checkCellStyle }}"><span onClick="{{ r.onSelect }}" style="{{ r.boxStyle }}">{{ r.mark }}</span></td>
+                    <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="6">
+                      <td onClick="{{ c.onClick }}" onDoubleClick="{{ c.onEdit }}" style="{{ c.style }}" title="{{ c.hint }}">
+                        <sc-if value="{{ c.editing }}" hint-placeholder-val="{{ false }}">
+                          <input value="{{ editVal }}" onChange="{{ onEditChange }}" onBlur="{{ commitEdit }}" onKeyDown="{{ onEditKey }}" autoFocus="{{ true }}" style="{{ editInputStyle }}">
+                        </sc-if>
+                        <sc-if value="{{ c.plain }}" hint-placeholder-val="{{ true }}">
+                          <span>{{ c.text }}</span>
+                        </sc-if>
+                        <sc-if value="{{ c.badge }}" hint-placeholder-val="{{ false }}">
+                          <span style="{{ c.badgeStyle }}">{{ c.text }}</span>
+                        </sc-if>
+                      </td>
+                    </sc-for>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-top:1px solid var(--bd,#e3e6eb);font:400 11px 'IBM Plex Mono',monospace;color:var(--mut,#6b7382)">
+            <span>{{ rowCountLabel }}</span>
+            <span style="opacity:.5">·</span>
+            <span>Double-click an editable cell to change it · click a row for detail</span>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </main>
+
+  <sc-if value="{{ drawer }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeDrawer }}" style="position:fixed;inset:0;background:rgba(8,11,17,.34);z-index:60"></div>
+    <div style="{{ drawerStyle }}">
+      <div style="flex:none;padding:15px 18px;border-bottom:1px solid var(--bd,#e3e6eb);display:flex;align-items:flex-start;gap:10px">
+        <div style="min-width:0">
+          <div style="font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:var(--mut,#6b7382)">{{ drawerKicker }}</div>
+          <div style="font-weight:600;font-size:16px;letter-spacing:-.02em;margin-top:3px">{{ drawerTitle }}</div>
+        </div>
+        <div style="flex:1"></div>
+        <div onClick="{{ closeDrawer }}" style="{{ iconBtnStyle }}">✕</div>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:14px 18px 24px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--bd,#e3e6eb);border:1px solid var(--bd,#e3e6eb);border-radius:8px;overflow:hidden">
+          <sc-for list="{{ drawerFields }}" as="f" hint-placeholder-count="6">
+            <div style="background:var(--pnl,#fff);padding:10px 12px">
+              <div style="font:500 9.5px 'IBM Plex Mono',monospace;letter-spacing:.07em;color:var(--mut,#6b7382)">{{ f.label }}</div>
+              <div style="font-size:12.5px;margin-top:3px;word-break:break-word">{{ f.value }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:var(--mut,#6b7382);margin:20px 0 10px">ACTIVITY</div>
+        <div style="display:flex;flex-direction:column;gap:0">
+          <sc-for list="{{ drawerLog }}" as="l" hint-placeholder-count="4">
+            <div style="display:flex;gap:11px;padding-bottom:14px">
+              <div style="display:flex;flex-direction:column;align-items:center;flex:none">
+                <div style="{{ l.dotStyle }}"></div>
+                <div style="width:1px;flex:1;background:var(--bd,#e3e6eb)"></div>
+              </div>
+              <div style="min-width:0">
+                <div style="font-size:12px">{{ l.text }}</div>
+                <div style="font:400 10px 'IBM Plex Mono',monospace;color:var(--mut,#6b7382);margin-top:2px">{{ l.when }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="flex:none;padding:12px 18px;border-top:1px solid var(--bd,#e3e6eb);display:flex;gap:8px">
+        <div onClick="{{ drawerApprove }}" style="{{ primaryBtnStyle }}">Approve</div>
+        <div onClick="{{ drawerDuplicate }}" style="{{ chipBtnStyle }}">Duplicate</div>
+        <div style="flex:1"></div>
+        <div onClick="{{ closeDrawer }}" style="{{ chipBtnStyle }}">Close</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ modal }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeModal }}" style="position:fixed;inset:0;background:rgba(8,11,17,.42);z-index:70;display:flex;align-items:flex-start;justify-content:center;padding-top:9vh"></div>
+    <div style="{{ modalStyle }}">
+      <div style="padding:16px 20px 12px;border-bottom:1px solid var(--bd,#e3e6eb)">
+        <div style="font-weight:600;font-size:15px;letter-spacing:-.02em">{{ modalTitle }}</div>
+        <div style="color:var(--mut,#6b7382);font-size:11.5px;margin-top:2px">Required fields are marked. Values validate on save.</div>
+      </div>
+      <div style="padding:16px 20px;display:grid;grid-template-columns:1fr 1fr;gap:13px">
+        <sc-for list="{{ formFields }}" as="f" hint-placeholder-count="4">
+          <div style="{{ f.wrapStyle }}">
+            <label style="display:block;font:500 9.5px 'IBM Plex Mono',monospace;letter-spacing:.07em;color:var(--mut,#6b7382);margin-bottom:5px">{{ f.label }}</label>
+            <sc-if value="{{ f.isSelect }}" hint-placeholder-val="{{ false }}">
+              <select value="{{ f.value }}" onChange="{{ f.onChange }}" style="{{ f.inputStyle }}">
+                <sc-for list="{{ f.options }}" as="o" hint-placeholder-count="3"><option value="{{ o }}">{{ o }}</option></sc-for>
+              </select>
+            </sc-if>
+            <sc-if value="{{ f.isText }}" hint-placeholder-val="{{ true }}">
+              <input value="{{ f.value }}" onChange="{{ f.onChange }}" placeholder="{{ f.ph }}" style="{{ f.inputStyle }}">
+            </sc-if>
+            <sc-if value="{{ f.error }}" hint-placeholder-val="{{ false }}">
+              <div style="color:#dc2626;font-size:10.5px;margin-top:4px">{{ f.error }}</div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <div style="padding:12px 20px 16px;display:flex;gap:8px;border-top:1px solid var(--bd,#e3e6eb)">
+        <div style="flex:1"></div>
+        <div onClick="{{ closeModal }}" style="{{ chipBtnStyle }}">Cancel</div>
+        <div onClick="{{ saveForm }}" style="{{ primaryBtnStyle }}">Save record</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ customizeOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeCustomize }}" style="position:fixed;inset:0;background:rgba(8,11,17,.3);z-index:80"></div>
+    <div style="{{ customizeStyle }}">
+      <div style="flex:none;padding:15px 18px;border-bottom:1px solid var(--bd,#e3e6eb);display:flex;align-items:center">
+        <div style="font-weight:600;font-size:14px;letter-spacing:-.02em">Customize workspace</div>
+        <div style="flex:1"></div>
+        <div onClick="{{ closeCustomize }}" style="{{ iconBtnStyle }}">✕</div>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:16px 18px 28px;display:flex;flex-direction:column;gap:20px">
+        <sc-for list="{{ settingGroups }}" as="g" hint-placeholder-count="6">
+          <div>
+            <div style="font:500 9.5px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:var(--mut,#6b7382);margin-bottom:8px">{{ g.label }}</div>
+            <sc-if value="{{ g.isSwatch }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;gap:9px;flex-wrap:wrap">
+                <sc-for list="{{ g.swatches }}" as="s" hint-placeholder-count="6">
+                  <div onClick="{{ s.onClick }}" title="{{ s.label }}" style="{{ s.style }}">{{ s.mark }}</div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ g.isSeg }}" hint-placeholder-val="{{ false }}">
+              <div style="{{ g.segWrapStyle }}">
+                <sc-for list="{{ g.segs }}" as="s" hint-placeholder-count="3">
+                  <div onClick="{{ s.onClick }}" style="{{ s.style }}">{{ s.label }}</div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ g.isSlider }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:11px">
+                <input type="range" min="{{ g.min }}" max="{{ g.max }}" step="{{ g.step }}" value="{{ g.value }}" onChange="{{ g.onChange }}" style="{{ g.sliderStyle }}">
+                <span style="font:500 11px 'IBM Plex Mono',monospace;color:var(--mut,#6b7382);min-width:44px">{{ g.readout }}</span>
+              </div>
+            </sc-if>
+            <div style="font-size:11px;color:var(--mut,#6b7382);margin-top:7px">{{ g.hint }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ chatOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ chatPanelStyle }}">
+      <div style="flex:none;padding:13px 16px;border-bottom:1px solid var(--bd,#e3e6eb);display:flex;align-items:center;gap:10px">
+        <div style="width:26px;height:26px;border-radius:7px;background:var(--ac,#2563eb);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;flex:none">✦</div>
+        <div style="min-width:0;flex:1">
+          <div style="font-weight:600;font-size:12.5px;letter-spacing:-.01em">ERP Assistant</div>
+          <div style="font:400 9.5px 'IBM Plex Mono',monospace;color:var(--mut,#6b7382)">Searches orders · invoices · stock · people</div>
+        </div>
+        <div onClick="{{ clearChat }}" style="{{ iconBtnStyle }}" title="Clear conversation">⟲</div>
+        <div onClick="{{ toggleChat }}" style="{{ iconBtnStyle }}">✕</div>
+      </div>
+
+      <div style="flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+        <sc-for list="{{ chatLog }}" as="m" hint-placeholder-count="2">
+          <div style="{{ m.rowStyle }}">
+            <div style="{{ m.bubbleStyle }}">{{ m.text }}</div>
+            <sc-if value="{{ m.hasResults }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;width:100%">
+                <sc-for list="{{ m.results }}" as="r" hint-placeholder-count="3">
+                  <div onClick="{{ r.onClick }}" style="{{ r.style }}">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <span style="font:500 10.5px 'IBM Plex Mono',monospace;color:var(--ac,#2563eb)">{{ r.id }}</span>
+                      <span style="{{ r.badgeStyle }}">{{ r.status }}</span>
+                      <span style="flex:1"></span>
+                      <span style="font:500 10.5px 'IBM Plex Mono',monospace">{{ r.amount }}</span>
+                    </div>
+                    <div style="font-size:11.5px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.title }}</div>
+                    <div style="font:400 9.5px 'IBM Plex Mono',monospace;color:var(--mut,#6b7382);margin-top:2px">{{ r.sub }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ m.hasFacts }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--bd,#e3e6eb);border:1px solid var(--bd,#e3e6eb);border-radius:7px;overflow:hidden;margin-top:8px;width:100%">
+                <sc-for list="{{ m.facts }}" as="f" hint-placeholder-count="4">
+                  <div style="background:var(--pnl,#fff);padding:9px 11px">
+                    <div style="font:500 9px 'IBM Plex Mono',monospace;letter-spacing:.07em;color:var(--mut,#6b7382)">{{ f.label }}</div>
+                    <div style="font-weight:600;font-size:14px;letter-spacing:-.02em;margin-top:2px">{{ f.value }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+        <sc-if value="{{ chatBusy }}" hint-placeholder-val="{{ false }}">
+          <div style="{{ typingStyle }}">Searching records…</div>
+        </sc-if>
+      </div>
+
+      <div style="flex:none;padding:9px 16px 0;display:flex;gap:6px;flex-wrap:wrap">
+        <sc-for list="{{ chatChips }}" as="c" hint-placeholder-count="4">
+          <div onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}</div>
+        </sc-for>
+      </div>
+
+      <div style="flex:none;padding:11px 16px 14px;display:flex;gap:8px;align-items:center">
+        <input value="{{ chatQ }}" onChange="{{ onChatChange }}" onKeyDown="{{ onChatKey }}" placeholder="Find a PO, invoice, SKU, customer…" style="{{ chatInputStyle }}">
+        <div onClick="{{ sendChat }}" style="{{ chatSendStyle }}">↑</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <div style="position:fixed;right:18px;bottom:18px;z-index:120;display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+    <sc-for list="{{ toasts }}" as="t" hint-placeholder-count="0">
+      <div style="{{ t.style }}">
+        <span style="{{ t.dotStyle }}"></span>
+        <span>{{ t.text }}</span>
+      </div>
+    </sc-for>
+  </div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;accent&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Blue&quot;,&quot;Indigo&quot;,&quot;Teal&quot;,&quot;Violet&quot;,&quot;Amber&quot;,&quot;Graphite&quot;],&quot;default&quot;:&quot;Blue&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;darkMode&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;density&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Compact&quot;,&quot;Comfortable&quot;,&quot;Relaxed&quot;],&quot;default&quot;:&quot;Compact&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Layout&quot;},&quot;fontScale&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:0.85,&quot;max&quot;:1.3,&quot;step&quot;:0.05,&quot;default&quot;:1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Layout&quot;},&quot;sidebarCollapsed&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Layout&quot;},&quot;brandName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Nordhaven&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;}}">
+class Component extends DCLogic {
+  accents = {
+    Blue:   '#2563eb',
+    Indigo: '#4f46e5',
+    Teal:   '#0d9488',
+    Violet: '#7c3aed',
+    Amber:  '#b45309',
+    Graphite: '#334155'
+  };
+
+  state = {
+    mod: 'dashboard',
+    dark: this.props.darkMode ?? false,
+    accent: this.props.accent ?? 'Blue',
+    density: this.props.density ?? 'Compact',
+    fs: this.props.fontScale ?? 1,
+    collapsed: this.props.sidebarCollapsed ?? false,
+    q: '', sortKey: null, sortDir: 1, filter: 'All',
+    sel: {}, editing: null, editVal: '',
+    drawer: null, modal: false, form: {}, errs: {},
+    toasts: [], cols: {}, colMenu: false,
+    customizeOpen: false, layoutEdit: false,
+    order: ['kpis','revenue','pipeline','lowstock','activity'],
+    hidden: {}, wide: {},
+    tip: null, extra: {}, removed: {},
+    ctip: null, chatOpen: false, chatQ: '', chatBusy: false,
+    chatLog: [{ role: 'bot', text: 'Ask me to find anything in the system — a purchase order, an invoice, a SKU, a customer, or a person. Try a document number, a company name, or a question like “which invoices are overdue?”' }]
+  };
+
+  palette() {
+    const ac = this.accents[this.state.accent] || this.accents.Blue;
+    return [ac, '#0d9488', '#7c3aed', '#b45309', '#0891b2', '#64748b', '#db2777'];
+  }
+
+  // ---------- chart factories ----------
+  mkBars(T, id, label, note, span, data, unit) {
+    const max = Math.max.apply(null, data.map(d => d.v));
+    return {
+      id, label, note, span, isBars: true, h: 150,
+      bars: data.map((d, i) => {
+        const hot = this.state.ctip === id + ':' + i;
+        return {
+          label: d.l, hot, tip: d.l + ' · ' + (unit || '') + d.v,
+          onEnter: () => this.setState({ ctip: id + ':' + i }),
+          onLeave: () => this.setState({ ctip: null }),
+          barStyle: {
+            width: '100%', height: Math.max(2, d.v / max * 100) + '%', borderRadius: '3px 3px 0 0',
+            background: hot ? (d.c || T.ac) : this.hexA(d.c || T.ac, this.state.dark ? .45 : .34),
+            transition: 'background .12s'
+          }
+        };
+      })
+    };
+  }
+
+  mkHbars(T, label, note, span, data, fmt) {
+    const max = Math.max.apply(null, data.map(d => d.v));
+    const P = this.palette();
+    return {
+      label, note, span, isHbars: true,
+      hbars: data.map((d, i) => ({
+        label: d.l, right: fmt ? fmt(d.v) : String(d.v),
+        fillStyle: { width: (d.v / max * 100) + '%', height: '100%', borderRadius: 4, background: d.c || (d.multi ? P[i % P.length] : T.ac) }
+      }))
+    };
+  }
+
+  mkDonut(T, label, note, span, data, centerValue, centerLabel, fmt) {
+    const P = this.palette();
+    const total = data.reduce((a, b) => a + b.v, 0);
+    const C = 339.29;
+    let acc = 0;
+    return {
+      label, note, span, isDonut: true, centerValue, centerLabel,
+      trackColor: T.track,
+      segs: data.map((d, i) => {
+        const frac = d.v / total, len = frac * C;
+        const off = -acc; acc += len;
+        const color = d.c || P[i % P.length];
+        return {
+          label: d.l, color, dash: len.toFixed(2) + ' ' + (C - len).toFixed(2), offset: off.toFixed(2),
+          right: (fmt ? fmt(d.v) : String(d.v)) + ' · ' + Math.round(frac * 100) + '%',
+          dotStyle: { width: 9, height: 9, borderRadius: 3, background: color, flex: 'none' }
+        };
+      })
+    };
+  }
+
+  mkLine(T, label, note, span, series, xLabels, series2, legend, h) {
+    const all = series.concat(series2 || []);
+    const mn = Math.min.apply(null, all), mx = Math.max.apply(null, all);
+    const rng = (mx - mn) || 1;
+    const P = this.palette();
+    const map = arr => arr.map((v, i) => {
+      const x = (i / (arr.length - 1)) * 600;
+      const y = 170 - ((v - mn) / rng) * 145;
+      return x.toFixed(1) + ',' + y.toFixed(1);
+    });
+    const pts = map(series);
+    return {
+      label, note, span, isLine: true, lineH: (h || 190) + 'px',
+      line: pts.join(' '), area: '0,190 ' + pts.join(' ') + ' 600,190',
+      hasLine2: !!series2, line2: series2 ? map(series2).join(' ') : '',
+      stroke: T.ac, stroke2: P[1], softFill: this.hexA(T.ac, this.state.dark ? .18 : .1),
+      gridColor: T.bd, gridY: [30, 70, 110, 150],
+      xLabels,
+      hasLegend: !!legend,
+      legend: (legend || []).map((l, i) => ({ label: l, dotStyle: { width: 9, height: 9, borderRadius: 3, background: i === 0 ? T.ac : P[1], flex: 'none' } }))
+    };
+  }
+
+  mkHeat(T, label, note, span, rowLabels, colLabels, matrix, unit) {
+    const flat = [].concat.apply([], matrix);
+    const mx = Math.max.apply(null, flat);
+    const cells = [];
+    matrix.forEach((row, ri) => row.forEach((v, ci) => cells.push({
+      tip: rowLabels[ri] + ' · ' + colLabels[ci] + ' · ' + v + (unit || ''),
+      style: { height: 19, borderRadius: 3, background: v === 0 ? T.track : this.hexA(T.ac, .12 + (v / mx) * .78) }
+    })));
+    return {
+      label, note, span, isHeat: true, rowLabels, colLabels, cells,
+      heatHeadStyle: { display: 'grid', gridTemplateColumns: 'repeat(' + colLabels.length + ',1fr)', gap: 4, marginBottom: 4 },
+      heatGridStyle: { display: 'grid', gridTemplateColumns: 'repeat(' + colLabels.length + ',1fr)', gap: 4 },
+      scale: [.15, .35, .55, .75, .95].map(a => ({ width: 15, height: 8, borderRadius: 2, background: this.hexA(T.ac, a), display: 'inline-block' }))
+    };
+  }
+
+  mkStack(T, label, note, span, rows, legendLabels, fmt) {
+    const P = this.palette();
+    return {
+      label, note, span, isStack: true,
+      legend: legendLabels.map((l, i) => ({ label: l, dotStyle: { width: 9, height: 9, borderRadius: 3, background: P[i % P.length], flex: 'none' } })),
+      stacks: rows.map(r => {
+        const tot = r.parts.reduce((a, b) => a + b, 0);
+        return {
+          label: r.l, right: fmt ? fmt(tot) : String(tot),
+          parts: r.parts.map((p, i) => ({
+            tip: legendLabels[i] + ' · ' + p,
+            style: { width: (p / tot * 100) + '%', background: P[i % P.length] }
+          }))
+        };
+      })
+    };
+  }
+
+  mkStat(T, label, note, span, value, delta, up, spark) {
+    const mn = Math.min.apply(null, spark), mx = Math.max.apply(null, spark), rng = (mx - mn) || 1;
+    const pts = spark.map((v, i) => ((i / (spark.length - 1)) * 200).toFixed(1) + ',' + (40 - ((v - mn) / rng) * 34).toFixed(1));
+    return {
+      label, note, span, isStat: true, value, delta,
+      spark: pts.join(' '), sparkArea: '0,46 ' + pts.join(' ') + ' 200,46',
+      stroke: up ? '#0d9488' : '#dc2626',
+      softFill: this.hexA(up ? '#0d9488' : '#dc2626', this.state.dark ? .18 : .1),
+      deltaStyle: { fontSize: 11, fontWeight: 600, marginTop: 3, color: up ? '#0d9488' : '#dc2626' }
+    };
+  }
+
+  buildCharts(T) {
+    const m = this.state.mod, eur = v => '€' + v.toLocaleString('de-DE');
+    const M = this.months, P = this.palette();
+    const wk = ['W23', 'W24', 'W25', 'W26', 'W27', 'W28', 'W29', 'W30'];
+
+    if (m === 'dashboard') return [
+      this.mkDonut(T, 'Revenue by division', 'YTD · share', 4,
+        [{ l: 'Automation', v: 24.1 }, { l: 'Drives', v: 15.6 }, { l: 'Enclosures', v: 9.8 }, { l: 'Service', v: 6.1 }],
+        '€55.6M', 'YTD', v => '€' + v.toFixed(1) + 'M'),
+      this.mkLine(T, 'Cash position vs. forecast', '12 months · €M', 5,
+        [8.1, 7.4, 9.2, 11.6, 9.9, 10.4, 12.1, 11.2, 13.4, 14.1, 13.6, 15.2],
+        M, [8.0, 8.2, 8.9, 10.4, 10.1, 10.8, 11.5, 11.9, 12.6, 13.2, 13.9, 14.4],
+        ['Actual', 'Forecast']),
+      this.mkStat(T, 'On-time delivery', 'rolling 90 days', 3, '94.2%', '+2.1 pts vs Q2', true,
+        [88, 89, 91, 90, 92, 93, 92, 94, 94]),
+      this.mkHeat(T, 'Order intake density', 'weekday × week · order count', 7,
+        ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], wk,
+        [[12, 18, 14, 22, 19, 24, 21, 27], [16, 21, 19, 25, 23, 28, 26, 31], [14, 17, 22, 20, 26, 25, 29, 33],
+         [19, 24, 21, 28, 27, 31, 30, 36], [9, 11, 13, 12, 15, 14, 17, 19]]),
+      this.mkStack(T, 'Headcount by function', '1 284 employees · by entity', 5,
+        [{ l: 'Germany', parts: [212, 148, 96] }, { l: 'Netherlands', parts: [104, 71, 52] },
+         { l: 'Poland', parts: [186, 62, 38] }, { l: 'Italy', parts: [141, 83, 91] }],
+        ['Production', 'Commercial', 'Support'])
+    ];
+
+    if (m === 'reports') return [
+      this.mkStat(T, 'Gross margin', 'YTD blended', 3, '38.4%', '+3.1 pts YoY', true, [31, 32, 34, 33, 36, 37, 39, 41]),
+      this.mkStat(T, 'Days sales outstanding', 'AR aging', 3, '41 d', '+4 d vs target', false, [34, 35, 33, 37, 38, 40, 39, 41]),
+      this.mkStat(T, 'Inventory turns', 'annualised', 3, '5.8×', '+0.4 vs LY', true, [5.1, 5.0, 5.2, 5.4, 5.3, 5.6, 5.7, 5.8]),
+      this.mkStat(T, 'Order backlog', 'confirmed value', 3, '€24.6M', '−1.8% MoM', false, [26, 26.4, 25.8, 25.9, 25.1, 24.9, 24.8, 24.6]),
+      this.mkDonut(T, 'Channel mix', 'revenue share', 4,
+        [{ l: 'Direct sales', v: 32.4 }, { l: 'Distribution', v: 14.1 }, { l: 'OEM contracts', v: 6.8 }, { l: 'Aftermarket', v: 2.3 }],
+        '€55.6M', 'TOTAL', v => '€' + v.toFixed(1) + 'M'),
+      this.mkBars(T, 'q-intake', 'Order intake', 'by month · €M', 8,
+        M.map((l, i) => ({ l, v: [3.4, 3.8, 4.6, 5.4, 3.9, 4.2, 4.8, 4.4, 5.2, 5.7, 5.4, 6.3][i] })), '€'),
+      this.mkHeat(T, 'Revenue heat · country × quarter', '€M', 7,
+        ['DE', 'NL', 'IT', 'FR', 'PL', 'Nordics'], ['Q3 25', 'Q4 25', 'Q1 26', 'Q2 26', 'Q3 26'],
+        [[4.1, 4.6, 4.4, 4.9, 5.2], [2.4, 2.8, 2.6, 3.1, 3.3], [1.9, 2.1, 2.2, 2.3, 2.5],
+         [1.7, 1.8, 2.0, 2.1, 2.2], [1.1, 1.2, 1.3, 1.4, 1.5], [0.9, 1.0, 1.1, 1.1, 1.2]], ' €M'),
+      this.mkStack(T, 'Cost structure', 'share of revenue', 5,
+        [{ l: 'Q1 2026', parts: [58, 21, 12] }, { l: 'Q2 2026', parts: [56, 21, 13] }, { l: 'Q3 2026', parts: [54, 22, 13] }],
+        ['COGS', 'Opex', 'Other'], v => v + '%')
+    ];
+
+    if (m === 'sales') return [
+      this.mkStat(T, 'Order intake MTD', 'net of cancellations', 3, '€1.15M', '+9.4% vs Jul', true, [820, 870, 910, 880, 960, 1020, 1090, 1150]),
+      this.mkBars(T, 's-intake', 'Orders per month', 'count', 5,
+        M.map((l, i) => ({ l, v: [58, 61, 74, 88, 63, 69, 77, 71, 84, 92, 87, 101][i] }))),
+      this.mkDonut(T, 'Orders by status', 'open book', 4,
+        [{ l: 'Confirmed', v: 126, c: '#0d9488' }, { l: 'In production', v: 61, c: '#b45309' },
+         { l: 'Open', v: 84, c: T.ac }, { l: 'Shipped', v: 33, c: '#0891b2' }, { l: 'Blocked', v: 8, c: '#dc2626' }],
+        '312', 'ORDERS'),
+      this.mkHbars(T, 'Top customers', 'net value YTD', 5,
+        [{ l: 'Nordwind Logistik AG', v: 1584000, multi: true }, { l: 'Brauhaus Vogel GmbH', v: 1240000, multi: true },
+         { l: 'Rotterdam Marine BV', v: 862000, multi: true }, { l: 'Milano Impianti Srl', v: 704000, multi: true },
+         { l: 'Zürich Systeme AG', v: 511000, multi: true }], eur),
+      this.mkLine(T, 'Average order value', '12 months · €k', 7,
+        [41, 44, 48, 52, 46, 49, 53, 51, 57, 59, 58, 63], M, null, null, 160)
+    ];
+
+    if (m === 'inventory') return [
+      this.mkStat(T, 'Stock value', '4 warehouses', 3, '€41.2M', '−2.7% MoM', false, [43, 42.8, 42.4, 42.1, 41.8, 41.6, 41.4, 41.2]),
+      this.mkDonut(T, 'Stock by category', 'valuation share', 4,
+        [{ l: 'Electronics', v: 15.8 }, { l: 'Mechanics', v: 12.4 }, { l: 'Enclosures', v: 7.6 }, { l: 'Consumables', v: 5.4 }],
+        '€41.2M', 'VALUE', v => '€' + v.toFixed(1) + 'M'),
+      this.mkHbars(T, 'Value by site', 'on-hand valuation', 5,
+        [{ l: 'Munich DC', v: 17400000, multi: true }, { l: 'Rotterdam', v: 10200000, multi: true },
+         { l: 'Gdańsk', v: 8100000, multi: true }, { l: 'Milan', v: 5500000, multi: true }], eur),
+      this.mkBars(T, 'i-turns', 'Inventory turns', 'by month', 5,
+        M.map((l, i) => ({ l, v: [4.9, 5.0, 5.2, 5.5, 5.1, 5.3, 5.4, 5.2, 5.6, 5.7, 5.6, 5.8][i] })), '×'),
+      this.mkHeat(T, 'Stock health · site × category', 'coverage in weeks', 7,
+        ['Munich', 'Rotterdam', 'Gdańsk', 'Milan'], ['Electr.', 'Mech.', 'Encl.', 'Consum.', 'Spares', 'Tooling'],
+        [[2, 6, 8, 11, 7, 5], [9, 12, 6, 14, 10, 8], [7, 5, 13, 9, 6, 11], [3, 8, 7, 12, 9, 4]], ' wks'),
+      this.mkStack(T, 'Signal distribution', 'SKUs by site', 5,
+        [{ l: 'Munich DC', parts: [312, 41, 18] }, { l: 'Rotterdam', parts: [268, 24, 6] },
+         { l: 'Gdańsk', parts: [201, 33, 9] }, { l: 'Milan', parts: [174, 29, 14] }],
+        ['OK', 'Low', 'Critical'], v => v + ' SKUs')
+    ];
+
+    if (m === 'purchasing') return [
+      this.mkStat(T, 'Committed spend', 'open POs', 3, '€8.94M', '+6.2% QoQ', false, [7.8, 8.0, 8.1, 8.4, 8.5, 8.7, 8.8, 8.94]),
+      this.mkDonut(T, 'Spend by category', 'rolling 12 months', 4,
+        [{ l: 'Raw material', v: 18.2 }, { l: 'Components', v: 12.7 }, { l: 'Services', v: 5.9 }, { l: 'Logistics', v: 4.1 }],
+        '€40.9M', 'SPEND', v => '€' + v.toFixed(1) + 'M'),
+      this.mkHbars(T, 'Top suppliers', 'committed value', 5,
+        [{ l: 'Steinmetz Metallwerke', v: 2148000, multi: true }, { l: 'Graz Automation GmbH', v: 1875000, multi: true },
+         { l: 'Baltic Steel UAB', v: 1492000, multi: true }, { l: 'Kraków Tooling Sp.', v: 964000, multi: true },
+         { l: 'Rhône Composites SA', v: 683000, multi: true }], eur),
+      this.mkBars(T, 'p-cycle', 'PO cycle time', 'days from request to approval', 5,
+        M.map((l, i) => ({ l, v: [9.1, 8.6, 8.9, 7.8, 8.2, 7.4, 7.1, 6.9, 6.4, 6.1, 5.8, 5.4][i] })), ' d'),
+      this.mkLine(T, 'Supplier on-time delivery', '% of receipts on schedule', 7,
+        [82, 84, 81, 86, 88, 85, 89, 91, 90, 92, 93, 94], M, null, null, 160),
+      this.mkStack(T, 'PO pipeline by buyer', 'value by status', 5,
+        [{ l: 'T. Bergman', parts: [214, 149, 44] }, { l: 'S. Nilsen', parts: [68, 32, 12] },
+         { l: 'G. Ferri', parts: [187, 53, 21] }, { l: 'A. Nowak', parts: [96, 41, 8] }],
+        ['Awaiting approval', 'Approved', 'Received'], v => '€' + v + 'k')
+    ];
+
+    if (m === 'manufacturing') return [
+      this.mkStat(T, 'Overall equipment eff.', 'OEE · 3 plants', 3, '78.6%', '+1.9 pts MoM', true, [72, 73, 75, 74, 76, 77, 78, 78.6]),
+      this.mkBars(T, 'm-out', 'Output units', 'by month', 5,
+        M.map((l, i) => ({ l, v: [412, 438, 501, 566, 428, 461, 508, 479, 542, 588, 561, 634][i] }))),
+      this.mkDonut(T, 'Capacity utilisation', 'by plant', 4,
+        [{ l: 'Munich', v: 91 }, { l: 'Gdańsk', v: 84 }, { l: 'Milan', v: 77 }],
+        '84%', 'AVG'),
+      this.mkHbars(T, 'Downtime reasons', 'hours lost · last 30 days', 5,
+        [{ l: 'Material shortage', v: 142, c: '#dc2626' }, { l: 'Changeover', v: 98 }, { l: 'Maintenance', v: 76 },
+         { l: 'Quality hold', v: 41 }, { l: 'Staffing', v: 27 }], v => v + ' h'),
+      this.mkHeat(T, 'Work-centre load', 'plant × week · % capacity', 7,
+        ['Munich A', 'Munich B', 'Gdańsk', 'Milan'], wk,
+        [[78, 84, 91, 96, 88, 92, 97, 99], [64, 71, 68, 79, 74, 81, 86, 88],
+         [82, 79, 88, 84, 91, 87, 93, 90], [58, 66, 72, 69, 77, 74, 81, 84]], '%'),
+      this.mkStack(T, 'Order status by plant', 'production orders', 5,
+        [{ l: 'Munich', parts: [12, 8, 3] }, { l: 'Gdańsk', parts: [9, 6, 2] }, { l: 'Milan', parts: [11, 5, 1] }],
+        ['Released', 'In production', 'Shortage'], v => v + ' MO')
+    ];
+
+    if (m === 'finance') return [
+      this.mkStat(T, 'Overdue AR', 'past due', 3, '€360.6K', '+18.3% MoM', false, [280, 291, 305, 312, 328, 341, 352, 361]),
+      this.mkBars(T, 'f-aging', 'AR aging buckets', '€k outstanding', 5,
+        [{ l: 'Current', v: 812 }, { l: '1–30', v: 246, c: '#b45309' }, { l: '31–60', v: 132, c: '#b45309' },
+         { l: '61–90', v: 74, c: '#dc2626' }, { l: '90+', v: 41, c: '#dc2626' }], '€'),
+      this.mkDonut(T, 'AR vs AP exposure', 'open documents', 4,
+        [{ l: 'AR open', v: 1305 }, { l: 'AP open', v: 968 }, { l: 'Disputed', v: 84, c: '#dc2626' }],
+        '€2.36M', 'GROSS', v => '€' + v + 'k'),
+      this.mkLine(T, 'Cash flow', 'in vs out · €M', 7,
+        [4.2, 4.6, 5.1, 5.8, 4.9, 5.2, 5.7, 5.4, 6.1, 6.4, 6.2, 6.9], M,
+        [3.8, 4.1, 4.4, 4.9, 4.5, 4.7, 5.0, 4.9, 5.3, 5.5, 5.4, 5.8], ['Inflow', 'Outflow'], 170),
+      this.mkHbars(T, 'Overdue by customer', 'past-due balance', 5,
+        [{ l: 'Brauhaus Vogel GmbH', v: 184200, c: '#dc2626' }, { l: 'Milano Impianti Srl', v: 132500, c: '#dc2626' },
+         { l: 'Nordic Bearings AB', v: 43900, c: '#b45309' }], eur),
+      this.mkStack(T, 'VAT exposure by country', 'net booked · €k', 5,
+        [{ l: 'Germany', parts: [412, 78] }, { l: 'Netherlands', parts: [268, 56] },
+         { l: 'Italy', parts: [186, 41] }, { l: 'France', parts: [154, 31] }],
+        ['Net', 'VAT'], v => '€' + v + 'k')
+    ];
+
+    if (m === 'crm') return [
+      this.mkStat(T, 'Active accounts', 'with revenue YTD', 3, '284', '+11 this quarter', true, [261, 265, 269, 272, 276, 279, 282, 284]),
+      this.mkDonut(T, 'Accounts by tier', 'portfolio mix', 4,
+        [{ l: 'Strategic', v: 18, c: '#7c3aed' }, { l: 'Key', v: 46, c: T.ac },
+         { l: 'Standard', v: 197, c: '#64748b' }, { l: 'Watchlist', v: 23, c: '#b45309' }],
+        '284', 'ACCOUNTS'),
+      this.mkHbars(T, 'Revenue concentration', 'top 5 share of total', 5,
+        [{ l: 'Nordwind Logistik AG', v: 1584000, multi: true }, { l: 'Brauhaus Vogel GmbH', v: 1240000, multi: true },
+         { l: 'Rotterdam Marine BV', v: 862000, multi: true }, { l: 'Milano Impianti Srl', v: 704000, multi: true },
+         { l: 'Zürich Systeme AG', v: 511000, multi: true }], eur),
+      this.mkBars(T, 'c-new', 'New accounts won', 'by month', 5,
+        M.map((l, i) => ({ l, v: [4, 6, 5, 9, 3, 7, 6, 8, 5, 11, 9, 12][i] }))),
+      this.mkHeat(T, 'Account coverage', 'country × tier · account count', 7,
+        ['DE', 'NL', 'IT', 'FR', 'PL'], ['Strategic', 'Key', 'Standard', 'Watchlist'],
+        [[7, 14, 58, 6], [4, 9, 41, 4], [3, 8, 34, 5], [2, 7, 29, 4], [2, 8, 35, 4]]),
+      this.mkLine(T, 'Net revenue retention', '% · rolling 12 months', 5,
+        [104, 103, 106, 108, 105, 107, 109, 108, 111, 112, 110, 114], M, null, null, 160)
+    ];
+
+    if (m === 'hr') return [
+      this.mkStat(T, 'Headcount', '4 legal entities', 3, '1 284', '+3.2% YoY', true, [1204, 1218, 1231, 1242, 1256, 1268, 1277, 1284]),
+      this.mkDonut(T, 'Headcount by function', 'org split', 4,
+        [{ l: 'Production', v: 643 }, { l: 'Commercial', v: 364 }, { l: 'Support', v: 277 }],
+        '1 284', 'PEOPLE'),
+      this.mkBars(T, 'h-age', 'Age distribution', 'employees per band', 5,
+        [{ l: '<25', v: 96 }, { l: '25–34', v: 341 }, { l: '35–44', v: 398 },
+         { l: '45–54', v: 287 }, { l: '55–64', v: 141 }, { l: '65+', v: 21 }]),
+      this.mkHbars(T, 'Headcount by location', 'people', 5,
+        [{ l: 'Munich', v: 456, multi: true }, { l: 'Gdańsk', v: 286, multi: true },
+         { l: 'Milan', v: 315, multi: true }, { l: 'Rotterdam', v: 227, multi: true }],
+        v => v + ' people'),
+      this.mkStack(T, 'Gender split by function', 'headcount', 5,
+        [{ l: 'Production', parts: [419, 224] }, { l: 'Commercial', parts: [186, 178] },
+         { l: 'Support', parts: [118, 159] }, { l: 'Leadership', parts: [37, 24] }],
+        ['Male', 'Female']),
+      this.mkLine(T, 'Attrition & open roles', '% attrition vs open reqs', 7,
+        [8.4, 8.1, 7.9, 7.6, 8.0, 7.4, 7.1, 6.8, 6.9, 6.4, 6.1, 5.8], M,
+        [22, 24, 21, 26, 25, 28, 27, 31, 29, 33, 30, 34], ['Attrition %', 'Open roles'], 170)
+    ];
+
+    return [];
+  }
+
+  // ---------- assistant ----------
+  chatSuggestions() {
+    return ['Which invoices are overdue?', 'Show low stock items', 'POs awaiting approval', 'Top customers by revenue', 'Find SO-24188'];
+  }
+
+  scanAll(pred) {
+    const hits = [];
+    Object.keys(this.tables).forEach(mod => {
+      const extra = this.state.extra[mod] || [];
+      extra.concat(this.tables[mod].rows).forEach(row => { if (pred(row, mod)) hits.push({ mod, row }); });
+    });
+    return hits;
+  }
+
+  answer(q) {
+    const t = q.toLowerCase().trim();
+    const eur = v => '€' + Number(v).toLocaleString('de-DE');
+    const has = re => re.test(t);
+
+    const idMatch = t.match(/\b(so|po|mo|inv|mat|cu|emp)[-\s]?[\w-]*\d[\w-]*/i);
+    if (idMatch) {
+      const needle = idMatch[0].replace(/\s/g, '-').toLowerCase();
+      const hits = this.scanAll(r => String(r[Object.keys(r)[0]]).toLowerCase().includes(needle));
+      if (hits.length) return { role: 'bot', text: hits.length === 1 ? 'Found 1 matching document.' : 'Found ' + hits.length + ' documents matching “' + idMatch[0].toUpperCase() + '”.', results: hits.slice(0, 6) };
+      return { role: 'bot', text: 'No document matches “' + idMatch[0].toUpperCase() + '”. It may be archived or belong to another company code.' };
+    }
+
+    if (has(/overdue|past due|unpaid|late payment|dunning/)) {
+      const hits = this.scanAll((r, m) => m === 'finance' && r.status === 'Overdue');
+      const tot = hits.reduce((a, h) => a + Number(h.row.net || 0), 0);
+      return { role: 'bot', text: hits.length + ' invoices are past due, worth ' + eur(tot) + ' in total. The oldest is ' + hits[hits.length - 1].row.id + ' at ' + hits[hits.length - 1].row.age + '.', results: hits, facts: [{ label: 'OVERDUE DOCS', value: String(hits.length) }, { label: 'TOTAL VALUE', value: eur(tot) }] };
+    }
+
+    if (has(/low stock|shortage|reorder|critical|replenish|out of stock/)) {
+      const hits = this.scanAll((r, m) => m === 'inventory' && r.status !== 'OK');
+      const crit = hits.filter(h => h.row.status === 'Critical').length;
+      return { role: 'bot', text: hits.length + ' materials are at or below their reorder point — ' + crit + ' are critical. Longest lead time in this set is 42 days (MAT-4077-E).', results: hits, facts: [{ label: 'BELOW POINT', value: String(hits.length) }, { label: 'CRITICAL', value: String(crit) }] };
+    }
+
+    if (has(/approv/)) {
+      const hits = this.scanAll((r, m) => m === 'purchasing' && r.status === 'Awaiting approval');
+      const tot = hits.reduce((a, h) => a + Number(h.row.total || 0), 0);
+      return { role: 'bot', text: hits.length + ' purchase orders are waiting for approval, committing ' + eur(tot) + '. Select them in Purchasing to approve in bulk.', results: hits, facts: [{ label: 'PENDING POS', value: String(hits.length) }, { label: 'COMMITTED', value: eur(tot) }] };
+    }
+
+    if (has(/blocked|on hold|stuck/)) {
+      const hits = this.scanAll((r) => r.status === 'Blocked' || r.status === 'Material shortage');
+      return { role: 'bot', text: hits.length + ' documents are blocked across sales and production.', results: hits };
+    }
+
+    if (has(/top customer|best customer|biggest customer|revenue concentration|top account/)) {
+      const hits = this.scanAll((r, m) => m === 'crm').sort((a, b) => b.row.ytd - a.row.ytd).slice(0, 5);
+      return { role: 'bot', text: 'Top 5 accounts by revenue YTD. Together they account for roughly 62% of group turnover.', results: hits };
+    }
+
+    if (has(/supplier|vendor/)) {
+      const hits = this.scanAll((r, m) => m === 'purchasing').sort((a, b) => b.row.total - a.row.total).slice(0, 5);
+      return { role: 'bot', text: 'Largest open supplier commitments right now.', results: hits };
+    }
+
+    if (has(/headcount|employee|staff|payroll|people/)) {
+      const hits = this.scanAll((r, m) => m === 'hr');
+      const tot = hits.reduce((a, h) => a + Number(h.row.salary || 0), 0);
+      return { role: 'bot', text: 'Group headcount is 1 284 across four entities. Here are the records in your access scope.', results: hits.slice(0, 6), facts: [{ label: 'HEADCOUNT', value: '1 284' }, { label: 'SCOPE GROSS', value: eur(tot) }] };
+    }
+
+    if (has(/revenue|turnover|sales total|how much did we sell/)) {
+      return { role: 'bot', text: 'Group revenue is €5.94M month-to-date and €55.6M year-to-date, up 12.4% on last month. Germany contributes €18.4M, the largest single market.', facts: [{ label: 'MTD', value: '€5.94M' }, { label: 'YTD', value: '€55.6M' }, { label: 'GROSS MARGIN', value: '38.4%' }, { label: 'BACKLOG', value: '€24.6M' }] };
+    }
+
+    if (has(/production|manufactur|plant|oee|work.?cent/)) {
+      const hits = this.scanAll((r, m) => m === 'manufacturing');
+      return { role: 'bot', text: 'OEE across the three plants is 78.6%, up 1.9 points. Open production orders:', results: hits.slice(0, 6) };
+    }
+
+    if (has(/^(hi|hello|hey|good (morning|afternoon))/)) {
+      return { role: 'bot', text: 'Morning. Anything you want to look up — a document number, a supplier, a SKU — or ask about overdue receivables, stock signals, or approvals waiting on you.' };
+    }
+
+    // full-text fallback across every module
+    const terms = t.split(/\s+/).filter(w => w.length > 2);
+    const hits = this.scanAll(row => terms.some(w => Object.keys(row).some(k => String(row[k]).toLowerCase().includes(w))));
+    if (hits.length) return { role: 'bot', text: 'Found ' + hits.length + ' record' + (hits.length === 1 ? '' : 's') + ' matching “' + q + '” across ' + new Set(hits.map(h => h.mod)).size + ' module(s).', results: hits.slice(0, 8) };
+    return { role: 'bot', text: 'Nothing matched “' + q + '”. Try a document number (SO-, PO-, MO-, INV-, MAT-, CU-, EMP-), a company name, or a question like “which invoices are overdue?”' };
+  }
+
+  send = text => {
+    const q = String(text != null ? text : this.state.chatQ).trim();
+    if (!q) return;
+    this.setState(s => ({ chatLog: s.chatLog.concat([{ role: 'user', text: q }]), chatQ: '', chatBusy: true }));
+    setTimeout(() => this.setState(s => ({ chatLog: s.chatLog.concat([this.answer(q)]), chatBusy: false })), 380);
+  };
+
+  nav = [
+    { label: 'OVERVIEW', items: [
+      { id: 'dashboard', code: 'DB', label: 'Executive dashboard' },
+      { id: 'reports', code: 'RP', label: 'Reports & analytics' } ] },
+    { label: 'OPERATIONS', items: [
+      { id: 'inventory', code: 'IN', label: 'Inventory / Stock', badge: 12 },
+      { id: 'purchasing', code: 'PO', label: 'Purchase orders', badge: 5 },
+      { id: 'manufacturing', code: 'MO', label: 'Production orders' } ] },
+    { label: 'COMMERCIAL', items: [
+      { id: 'sales', code: 'SO', label: 'Sales orders', badge: 8 },
+      { id: 'crm', code: 'CU', label: 'Customers' } ] },
+    { label: 'BACK OFFICE', items: [
+      { id: 'finance', code: 'FI', label: 'Invoices & GL', badge: 3 },
+      { id: 'hr', code: 'HR', label: 'Employees & payroll' } ] },
+    { label: 'SYSTEM', items: [
+      { id: 'settings', code: 'ST', label: 'Settings' } ] }
+  ];
+
+  tables = {
+    sales: {
+      title: 'Sales orders', sub: 'SD · order-to-cash · EUR', noun: 'Sales order',
+      cols: [
+        { k: 'id', l: 'Order', w: 104, mono: true },
+        { k: 'customer', l: 'Customer', w: 210 },
+        { k: 'country', l: 'Country', w: 90 },
+        { k: 'status', l: 'Status', w: 128, badge: true },
+        { k: 'items', l: 'Lines', w: 70, align: 'right', mono: true },
+        { k: 'total', l: 'Net value', w: 130, align: 'right', money: true, edit: true },
+        { k: 'due', l: 'Delivery', w: 110, mono: true },
+        { k: 'rep', l: 'Owner', w: 130 }
+      ],
+      rows: [
+        { id: 'SO-24188', customer: 'Brauhaus Vogel GmbH', country: 'DE', status: 'Confirmed', items: 14, total: 184200, due: '2026-08-19', rep: 'L. Kraus' },
+        { id: 'SO-24187', customer: 'Rotterdam Marine BV', country: 'NL', status: 'In production', items: 6, total: 96400, due: '2026-08-24', rep: 'M. Devries' },
+        { id: 'SO-24186', customer: 'Atelier Lyonnais SAS', country: 'FR', status: 'Open', items: 22, total: 41850, due: '2026-08-12', rep: 'C. Perrin' },
+        { id: 'SO-24185', customer: 'Nordwind Logistik AG', country: 'DE', status: 'Shipped', items: 9, total: 227900, due: '2026-08-06', rep: 'L. Kraus' },
+        { id: 'SO-24184', customer: 'Gdansk Precision Sp.', country: 'PL', status: 'Blocked', items: 3, total: 18300, due: '2026-08-28', rep: 'A. Nowak' },
+        { id: 'SO-24183', customer: 'Milano Impianti Srl', country: 'IT', status: 'Confirmed', items: 11, total: 132500, due: '2026-09-02', rep: 'G. Ferri' },
+        { id: 'SO-24182', customer: 'Helsinki Kone Oy', country: 'FI', status: 'Draft', items: 4, total: 27600, due: '2026-09-11', rep: 'M. Devries' },
+        { id: 'SO-24181', customer: 'Iberia Montajes SL', country: 'ES', status: 'Open', items: 17, total: 74100, due: '2026-08-21', rep: 'C. Perrin' },
+        { id: 'SO-24180', customer: 'Wien Anlagenbau GmbH', country: 'AT', status: 'Shipped', items: 8, total: 158700, due: '2026-08-04', rep: 'L. Kraus' },
+        { id: 'SO-24179', customer: 'Aarhus Teknik A/S', country: 'DK', status: 'In production', items: 12, total: 88900, due: '2026-08-30', rep: 'A. Nowak' },
+        { id: 'SO-24178', customer: 'Zürich Systeme AG', country: 'CH', status: 'Confirmed', items: 5, total: 64300, due: '2026-09-08', rep: 'G. Ferri' },
+        { id: 'SO-24177', customer: 'Praha Stroje s.r.o.', country: 'CZ', status: 'Open', items: 19, total: 39400, due: '2026-08-17', rep: 'A. Nowak' }
+      ]
+    },
+    inventory: {
+      title: 'Inventory / Stock', sub: 'MM · 4 warehouses · live valuation', noun: 'Stock item',
+      cols: [
+        { k: 'id', l: 'SKU', w: 116, mono: true },
+        { k: 'name', l: 'Material', w: 230 },
+        { k: 'site', l: 'Site', w: 130 },
+        { k: 'status', l: 'Signal', w: 118, badge: true },
+        { k: 'onhand', l: 'On hand', w: 92, align: 'right', mono: true, edit: true },
+        { k: 'reorder', l: 'Reorder pt', w: 96, align: 'right', mono: true, edit: true },
+        { k: 'value', l: 'Value', w: 126, align: 'right', money: true },
+        { k: 'lead', l: 'Lead time', w: 96, mono: true }
+      ],
+      rows: [
+        { id: 'MAT-4001-A', name: 'Servo drive 3.5 kW', site: 'Munich DC', status: 'Critical', onhand: 12, reorder: 60, value: 41400, lead: '21 d' },
+        { id: 'MAT-4012-B', name: 'Aluminium profile 40×40', site: 'Rotterdam', status: 'OK', onhand: 3480, reorder: 800, value: 61200, lead: '7 d' },
+        { id: 'MAT-4033-C', name: 'Bearing housing SKF', site: 'Munich DC', status: 'Low', onhand: 88, reorder: 120, value: 9350, lead: '14 d' },
+        { id: 'MAT-4044-A', name: 'Control cabinet IP66', site: 'Gdańsk', status: 'OK', onhand: 210, reorder: 90, value: 128600, lead: '30 d' },
+        { id: 'MAT-4058-D', name: 'PLC module 16DI/16DO', site: 'Milan', status: 'Low', onhand: 41, reorder: 75, value: 22800, lead: '18 d' },
+        { id: 'MAT-4061-A', name: 'Cable harness 5 m', site: 'Rotterdam', status: 'OK', onhand: 1260, reorder: 400, value: 18900, lead: '5 d' },
+        { id: 'MAT-4077-E', name: 'Hydraulic pump HP-2', site: 'Munich DC', status: 'Critical', onhand: 4, reorder: 25, value: 15600, lead: '42 d' },
+        { id: 'MAT-4090-B', name: 'Safety relay dual-ch.', site: 'Gdańsk', status: 'OK', onhand: 640, reorder: 200, value: 33800, lead: '11 d' },
+        { id: 'MAT-4102-C', name: 'Gearbox 1:20 flange', site: 'Milan', status: 'Low', onhand: 57, reorder: 80, value: 46100, lead: '25 d' },
+        { id: 'MAT-4118-A', name: 'Touch panel 12" HMI', site: 'Munich DC', status: 'OK', onhand: 175, reorder: 60, value: 87500, lead: '16 d' }
+      ]
+    },
+    purchasing: {
+      title: 'Purchase orders', sub: 'MM · procure-to-pay', noun: 'Purchase order',
+      cols: [
+        { k: 'id', l: 'PO', w: 104, mono: true },
+        { k: 'supplier', l: 'Supplier', w: 214 },
+        { k: 'country', l: 'Country', w: 88 },
+        { k: 'status', l: 'Status', w: 132, badge: true },
+        { k: 'total', l: 'Value', w: 128, align: 'right', money: true, edit: true },
+        { k: 'eta', l: 'ETA', w: 110, mono: true },
+        { k: 'buyer', l: 'Buyer', w: 128 }
+      ],
+      rows: [
+        { id: 'PO-90412', supplier: 'Steinmetz Metallwerke', country: 'DE', status: 'Awaiting approval', total: 214800, eta: '2026-09-04', buyer: 'T. Bergman' },
+        { id: 'PO-90411', supplier: 'Rhône Composites SA', country: 'FR', status: 'Approved', total: 68300, eta: '2026-08-22', buyer: 'S. Nilsen' },
+        { id: 'PO-90410', supplier: 'Baltic Steel UAB', country: 'LT', status: 'Received', total: 149200, eta: '2026-08-05', buyer: 'T. Bergman' },
+        { id: 'PO-90409', supplier: 'Vicenza Meccanica Srl', country: 'IT', status: 'Partially received', total: 52700, eta: '2026-08-18', buyer: 'G. Ferri' },
+        { id: 'PO-90408', supplier: 'Antwerp Polymers NV', country: 'BE', status: 'Approved', total: 31600, eta: '2026-08-27', buyer: 'S. Nilsen' },
+        { id: 'PO-90407', supplier: 'Kraków Tooling Sp.', country: 'PL', status: 'Awaiting approval', total: 96400, eta: '2026-09-15', buyer: 'A. Nowak' },
+        { id: 'PO-90406', supplier: 'Nordic Bearings AB', country: 'SE', status: 'Received', total: 43900, eta: '2026-07-30', buyer: 'T. Bergman' },
+        { id: 'PO-90405', supplier: 'Porto Cabos Lda', country: 'PT', status: 'Cancelled', total: 12400, eta: '—', buyer: 'S. Nilsen' },
+        { id: 'PO-90404', supplier: 'Graz Automation GmbH', country: 'AT', status: 'Approved', total: 187500, eta: '2026-09-09', buyer: 'G. Ferri' }
+      ]
+    },
+    manufacturing: {
+      title: 'Production orders', sub: 'PP · BOM & routing · 3 plants', noun: 'Production order',
+      cols: [
+        { k: 'id', l: 'Order', w: 104, mono: true },
+        { k: 'product', l: 'Finished good', w: 224 },
+        { k: 'plant', l: 'Plant', w: 128 },
+        { k: 'status', l: 'Status', w: 130, badge: true },
+        { k: 'qty', l: 'Qty', w: 74, align: 'right', mono: true, edit: true },
+        { k: 'done', l: 'Progress', w: 92, align: 'right', mono: true },
+        { k: 'start', l: 'Start', w: 108, mono: true },
+        { k: 'finish', l: 'Finish', w: 108, mono: true }
+      ],
+      rows: [
+        { id: 'MO-7731', product: 'Conveyor unit CX-200', plant: 'Munich', status: 'Released', qty: 40, done: '62%', start: '2026-08-03', finish: '2026-08-20' },
+        { id: 'MO-7730', product: 'Pump skid PS-40', plant: 'Gdańsk', status: 'In production', qty: 12, done: '31%', start: '2026-08-06', finish: '2026-08-29' },
+        { id: 'MO-7729', product: 'Control cabinet CC-8', plant: 'Milan', status: 'Confirmed', qty: 85, done: '94%', start: '2026-07-28', finish: '2026-08-11' },
+        { id: 'MO-7728', product: 'Drive assembly DA-3', plant: 'Munich', status: 'Material shortage', qty: 24, done: '8%', start: '2026-08-10', finish: '2026-09-02' },
+        { id: 'MO-7727', product: 'HMI panel kit HK-1', plant: 'Milan', status: 'Released', qty: 150, done: '45%', start: '2026-08-01', finish: '2026-08-25' },
+        { id: 'MO-7726', product: 'Gear module GM-12', plant: 'Gdańsk', status: 'Closed', qty: 60, done: '100%', start: '2026-07-14', finish: '2026-08-01' },
+        { id: 'MO-7725', product: 'Sensor rack SR-6', plant: 'Munich', status: 'In production', qty: 32, done: '77%', start: '2026-07-30', finish: '2026-08-16' },
+        { id: 'MO-7724', product: 'Hydraulic bench HB-2', plant: 'Milan', status: 'Confirmed', qty: 8, done: '12%', start: '2026-08-12', finish: '2026-09-06' }
+      ]
+    },
+    finance: {
+      title: 'Invoices & general ledger', sub: 'FI · EUR · VAT-compliant', noun: 'Invoice',
+      cols: [
+        { k: 'id', l: 'Document', w: 118, mono: true },
+        { k: 'party', l: 'Business partner', w: 214 },
+        { k: 'type', l: 'Type', w: 104 },
+        { k: 'status', l: 'Status', w: 118, badge: true },
+        { k: 'net', l: 'Net', w: 118, align: 'right', money: true, edit: true },
+        { k: 'vat', l: 'VAT', w: 78, align: 'right', mono: true },
+        { k: 'due', l: 'Due date', w: 110, mono: true },
+        { k: 'age', l: 'Aging', w: 90, mono: true }
+      ],
+      rows: [
+        { id: 'INV-2026-4412', party: 'Brauhaus Vogel GmbH', type: 'AR invoice', status: 'Overdue', net: 184200, vat: '19%', due: '2026-07-18', age: '21 d' },
+        { id: 'INV-2026-4411', party: 'Rotterdam Marine BV', type: 'AR invoice', status: 'Open', net: 96400, vat: '21%', due: '2026-08-20', age: '—' },
+        { id: 'INV-2026-4410', party: 'Steinmetz Metallwerke', type: 'AP invoice', status: 'Paid', net: 214800, vat: '19%', due: '2026-07-30', age: '—' },
+        { id: 'INV-2026-4409', party: 'Atelier Lyonnais SAS', type: 'AR invoice', status: 'Open', net: 41850, vat: '20%', due: '2026-08-26', age: '—' },
+        { id: 'INV-2026-4408', party: 'Gdansk Precision Sp.', type: 'Credit note', status: 'Posted', net: -8300, vat: '23%', due: '2026-08-02', age: '—' },
+        { id: 'INV-2026-4407', party: 'Milano Impianti Srl', type: 'AR invoice', status: 'Overdue', net: 132500, vat: '22%', due: '2026-07-09', age: '30 d' },
+        { id: 'INV-2026-4406', party: 'Rhône Composites SA', type: 'AP invoice', status: 'Open', net: 68300, vat: '20%', due: '2026-08-31', age: '—' },
+        { id: 'INV-2026-4405', party: 'Wien Anlagenbau GmbH', type: 'AR invoice', status: 'Paid', net: 158700, vat: '20%', due: '2026-07-25', age: '—' },
+        { id: 'INV-2026-4404', party: 'Nordic Bearings AB', type: 'AP invoice', status: 'Overdue', net: 43900, vat: '25%', due: '2026-07-02', age: '37 d' },
+        { id: 'INV-2026-4403', party: 'Iberia Montajes SL', type: 'AR invoice', status: 'Open', net: 74100, vat: '21%', due: '2026-09-01', age: '—' }
+      ]
+    },
+    crm: {
+      title: 'Customers', sub: 'CRM · accounts & credit exposure', noun: 'Customer',
+      cols: [
+        { k: 'id', l: 'Account', w: 110, mono: true },
+        { k: 'name', l: 'Name', w: 218 },
+        { k: 'country', l: 'Country', w: 88 },
+        { k: 'status', l: 'Tier', w: 108, badge: true },
+        { k: 'ytd', l: 'Revenue YTD', w: 134, align: 'right', money: true },
+        { k: 'credit', l: 'Credit limit', w: 128, align: 'right', money: true, edit: true },
+        { k: 'terms', l: 'Terms', w: 92, mono: true },
+        { k: 'owner', l: 'Owner', w: 124 }
+      ],
+      rows: [
+        { id: 'CU-10021', name: 'Brauhaus Vogel GmbH', country: 'DE', status: 'Strategic', ytd: 1240000, credit: 500000, terms: 'NET 30', owner: 'L. Kraus' },
+        { id: 'CU-10022', name: 'Rotterdam Marine BV', country: 'NL', status: 'Key', ytd: 862000, credit: 350000, terms: 'NET 45', owner: 'M. Devries' },
+        { id: 'CU-10023', name: 'Atelier Lyonnais SAS', country: 'FR', status: 'Standard', ytd: 318000, credit: 120000, terms: 'NET 30', owner: 'C. Perrin' },
+        { id: 'CU-10024', name: 'Nordwind Logistik AG', country: 'DE', status: 'Strategic', ytd: 1584000, credit: 750000, terms: 'NET 60', owner: 'L. Kraus' },
+        { id: 'CU-10025', name: 'Gdansk Precision Sp.', country: 'PL', status: 'Watchlist', ytd: 97000, credit: 40000, terms: 'PREPAY', owner: 'A. Nowak' },
+        { id: 'CU-10026', name: 'Milano Impianti Srl', country: 'IT', status: 'Key', ytd: 704000, credit: 300000, terms: 'NET 45', owner: 'G. Ferri' },
+        { id: 'CU-10027', name: 'Helsinki Kone Oy', country: 'FI', status: 'Standard', ytd: 226000, credit: 100000, terms: 'NET 30', owner: 'M. Devries' },
+        { id: 'CU-10028', name: 'Zürich Systeme AG', country: 'CH', status: 'Key', ytd: 511000, credit: 250000, terms: 'NET 30', owner: 'G. Ferri' }
+      ]
+    },
+    hr: {
+      title: 'Employees & payroll', sub: 'HCM · 4 entities · 1 284 headcount', noun: 'Employee',
+      cols: [
+        { k: 'id', l: 'Person', w: 104, mono: true },
+        { k: 'name', l: 'Name', w: 190 },
+        { k: 'dept', l: 'Department', w: 168 },
+        { k: 'site', l: 'Location', w: 122 },
+        { k: 'status', l: 'Status', w: 112, badge: true },
+        { k: 'salary', l: 'Annual gross', w: 132, align: 'right', money: true, edit: true },
+        { k: 'start', l: 'Start date', w: 112, mono: true }
+      ],
+      rows: [
+        { id: 'EMP-3301', name: 'Lena Kraus', dept: 'Sales – DACH', site: 'Munich', status: 'Active', salary: 92000, start: '2019-03-11' },
+        { id: 'EMP-3302', name: 'Maarten Devries', dept: 'Sales – Benelux', site: 'Rotterdam', status: 'Active', salary: 88000, start: '2020-09-01' },
+        { id: 'EMP-3303', name: 'Camille Perrin', dept: 'Sales – France', site: 'Lyon', status: 'On leave', salary: 84000, start: '2021-06-14' },
+        { id: 'EMP-3304', name: 'Anna Nowak', dept: 'Procurement', site: 'Gdańsk', status: 'Active', salary: 76000, start: '2018-01-08' },
+        { id: 'EMP-3305', name: 'Giulio Ferri', dept: 'Operations', site: 'Milan', status: 'Active', salary: 81000, start: '2022-02-21' },
+        { id: 'EMP-3306', name: 'Tomas Bergman', dept: 'Procurement', site: 'Munich', status: 'Notice', salary: 79000, start: '2017-11-02' },
+        { id: 'EMP-3307', name: 'Sofie Nilsen', dept: 'Procurement', site: 'Rotterdam', status: 'Active', salary: 74000, start: '2023-04-17' },
+        { id: 'EMP-3308', name: 'Jonas Weber', dept: 'Production', site: 'Munich', status: 'Active', salary: 68000, start: '2016-08-29' }
+      ]
+    }
+  };
+
+  badgeColors = {
+    Confirmed: '#0d9488', Open: '#2563eb', Draft: '#64748b', Shipped: '#0891b2',
+    'In production': '#b45309', Blocked: '#dc2626', Critical: '#dc2626', Low: '#b45309',
+    OK: '#0d9488', 'Awaiting approval': '#b45309', Approved: '#0d9488', Received: '#0891b2',
+    'Partially received': '#7c3aed', Cancelled: '#64748b', Released: '#2563eb',
+    'Material shortage': '#dc2626', Closed: '#64748b', Overdue: '#dc2626', Paid: '#0d9488',
+    Posted: '#0891b2', Strategic: '#7c3aed', Key: '#2563eb', Standard: '#64748b',
+    Watchlist: '#b45309', Active: '#0d9488', 'On leave': '#b45309', Notice: '#dc2626'
+  };
+
+  months = ['Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug'];
+  revenue = [3.1, 3.4, 4.2, 5.1, 3.6, 3.9, 4.4, 4.1, 4.8, 5.3, 5.0, 5.9];
+  marginPts = [31, 30, 33, 35, 32, 34, 36, 35, 38, 37, 39, 41];
+
+  // ---------- helpers ----------
+  money(n) { return (n < 0 ? '−€' : '€') + Math.abs(n).toLocaleString('de-DE'); }
+
+  t() {
+    const ac = this.accents[this.state.accent] || this.accents.Blue;
+    const d = this.state.dark;
+    return {
+      ac,
+      acs: this.hexA(ac, d ? .22 : .12),
+      bg: d ? '#0d1117' : '#f6f7f9',
+      pnl: d ? '#151b24' : '#ffffff',
+      fg: d ? '#e7eaf0' : '#14181f',
+      mut: d ? '#8b93a3' : '#6b7382',
+      bd: d ? '#242c38' : '#e3e6eb',
+      hov: d ? 'rgba(255,255,255,.045)' : 'rgba(0,0,0,.028)',
+      track: d ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)',
+      nav: d ? '#080b11' : '#111725'
+    };
+  }
+  hexA(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+  }
+  cy() { return this.state.density === 'Comfortable' ? 10 : this.state.density === 'Relaxed' ? 14 : 6; }
+
+  toast(text, kind) {
+    const id = Date.now() + Math.random();
+    this.setState(s => ({ toasts: s.toasts.concat([{ id, text, kind: kind || 'ok' }]) }));
+    setTimeout(() => this.setState(s => ({ toasts: s.toasts.filter(t => t.id !== id) })), 3200);
+  }
+
+  cfg() { return this.tables[this.state.mod]; }
+
+  allRows() {
+    const c = this.cfg(); if (!c) return [];
+    const extra = this.state.extra[this.state.mod] || [];
+    const rm = this.state.removed[this.state.mod] || {};
+    return extra.concat(c.rows).filter(r => !rm[r.id]);
+  }
+
+  visibleCols() {
+    const c = this.cfg(); if (!c) return [];
+    const hid = this.state.cols[this.state.mod] || {};
+    return c.cols.filter(col => !hid[col.k]);
+  }
+
+  fmt(col, v) {
+    if (v === undefined || v === null || v === '') return '—';
+    if (col.money) return this.money(Number(v));
+    return String(v);
+  }
+
+  // ---------- actions ----------
+  go = id => this.setState({ mod: id, q: '', sortKey: null, sel: {}, filter: 'All', editing: null, colMenu: false });
+
+  sortBy = k => this.setState(s => ({ sortKey: k, sortDir: s.sortKey === k ? -s.sortDir : 1 }));
+
+  startEdit = (rowId, key, val) => this.setState({ editing: rowId + '|' + key, editVal: String(val) });
+
+  commitEdit = () => {
+    const e = this.state.editing; if (!e) return;
+    const [rowId, key] = e.split('|');
+    const c = this.cfg();
+    const col = c.cols.find(x => x.k === key);
+    let v = this.state.editVal;
+    if (col.money || col.mono) { const n = Number(String(v).replace(/[^\d.-]/g, '')); if (!isNaN(n) && v !== '') v = n; }
+    const target = (this.state.extra[this.state.mod] || []).find(r => r.id === rowId) || c.rows.find(r => r.id === rowId);
+    if (target) target[key] = v;
+    this.setState({ editing: null });
+    this.toast(rowId + ' · ' + col.l + ' updated', 'ok');
+  };
+
+  // ---------- render ----------
+  renderVals() {
+    const S = this.state, T = this.t(), cfg = this.cfg();
+    const cy = this.cy();
+    const fsBase = (S.density === 'Compact' ? 12.5 : 13.5) * (S.fs || 1);
+
+    const themeVars = {
+      '--ac': T.ac, '--acs': T.acs, '--bg': T.bg, '--pnl': T.pnl, '--fg': T.fg,
+      '--mut': T.mut, '--bd': T.bd, '--hov': T.hov, '--track': T.track,
+      '--fs': fsBase.toFixed(2) + 'px', '--cy': cy + 'px'
+    };
+
+    const showLabels = !S.collapsed;
+    const isDashboard = S.mod === 'dashboard', isReports = S.mod === 'reports', isSettings = S.mod === 'settings';
+    const isTable = !!cfg;
+
+    // nav
+    const navGroups = this.nav.map(g => ({
+      label: g.label,
+      items: g.items.map(it => {
+        const on = it.id === S.mod;
+        return {
+          label: it.label, code: it.code, badge: it.badge, showBadge: !!it.badge && showLabels,
+          onClick: () => this.go(it.id),
+          style: {
+            display: 'flex', alignItems: 'center', gap: 10, padding: showLabels ? '0 9px' : '0',
+            justifyContent: showLabels ? 'flex-start' : 'center',
+            height: 30, borderRadius: 6, cursor: 'pointer', fontSize: 12.4,
+            color: on ? '#fff' : 'rgba(255,255,255,.66)',
+            background: on ? T.ac : 'transparent', fontWeight: on ? 600 : 400,
+            transition: 'background .12s'
+          },
+          glyphStyle: {
+            font: "500 9.5px 'IBM Plex Mono',monospace", letterSpacing: '.04em', flex: 'none',
+            width: 22, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            borderRadius: 4, background: on ? 'rgba(255,255,255,.2)' : 'rgba(255,255,255,.08)',
+            color: on ? '#fff' : 'rgba(255,255,255,.6)'
+          }
+        };
+      })
+    }));
+
+    const sidebarStyle = {
+      width: S.collapsed ? 60 : 234, flex: 'none', background: T.nav, display: 'flex',
+      flexDirection: 'column', position: 'sticky', top: 0, height: '100vh',
+      transition: 'width .16s ease'
+    };
+
+    // shared button styles
+    const iconBtnStyle = { width: 28, height: 28, flex: 'none', borderRadius: 6, border: '1px solid ' + T.bd, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 12, color: T.mut, background: 'transparent' };
+    const chipBtnStyle = { height: 26, padding: '0 10px', borderRadius: 6, border: '1px solid ' + T.bd, display: 'inline-flex', alignItems: 'center', cursor: 'pointer', fontSize: 11.5, color: T.fg, background: 'transparent', whiteSpace: 'nowrap' };
+    const primaryBtnStyle = { height: 28, padding: '0 12px', borderRadius: 6, background: T.ac, color: '#fff', display: 'inline-flex', alignItems: 'center', cursor: 'pointer', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' };
+    const customizeBtnStyle = { height: 28, padding: '0 11px', borderRadius: 6, border: '1px solid ' + T.ac, color: T.ac, display: 'inline-flex', alignItems: 'center', cursor: 'pointer', fontSize: 12, fontWeight: 500, background: T.acs, whiteSpace: 'nowrap' };
+    const searchStyle = { height: 28, flex: '0 1 216px', minWidth: 0, width: 216, borderRadius: 6, border: '1px solid ' + T.bd, background: S.dark ? '#0f151d' : '#fbfcfd', color: T.fg, padding: '0 10px 0 22px', fontSize: 12, outline: 'none', fontFamily: 'inherit' };
+
+    const out = {
+      themeVars, showLabels, sidebarStyle, navGroups,
+      brandName: this.props.brandName ?? 'Nordhaven',
+      collapseLabel: S.collapsed ? '»' : '« Collapse',
+      toggleCollapse: () => this.setState(s => ({ collapsed: !s.collapsed })),
+      toggleDark: () => this.setState(s => ({ dark: !s.dark })),
+      darkGlyph: S.dark ? '☾' : '☀',
+      iconBtnStyle, chipBtnStyle, primaryBtnStyle, customizeBtnStyle, searchStyle,
+      isDashboard, isReports, isSettings, isTable,
+      modTitle: isDashboard ? 'Executive dashboard' : isReports ? 'Reports & analytics' : isSettings ? 'Settings' : cfg.title,
+      modSub: isDashboard ? 'Group consolidated · Aug 2026 · EUR' : isReports ? 'BI · rolling 12 months' : isSettings ? 'Workspace configuration' : cfg.sub,
+      q: S.q,
+      onSearch: e => this.setState({ q: e.target.value }),
+      openCustomize: () => this.setState({ customizeOpen: true }),
+      closeCustomize: () => this.setState({ customizeOpen: false }),
+      customizeOpen: S.customizeOpen,
+      customizeStyle: { position: 'fixed', right: 0, top: 0, bottom: 0, width: 360, background: T.pnl, borderLeft: '1px solid ' + T.bd, zIndex: 90, display: 'flex', flexDirection: 'column', animation: 'dcslide .16s ease' },
+      months: this.months,
+      toasts: S.toasts.map(t => ({
+        text: t.text,
+        style: { display: 'flex', alignItems: 'center', gap: 9, background: S.dark ? '#1b2330' : '#111725', color: '#fff', padding: '9px 14px', borderRadius: 8, fontSize: 12, boxShadow: '0 8px 26px rgba(0,0,0,.28)', animation: 'dcin .16s ease' },
+        dotStyle: { width: 7, height: 7, borderRadius: '50%', background: t.kind === 'err' ? '#f87171' : t.kind === 'warn' ? '#fbbf24' : '#34d399', flex: 'none' }
+      }))
+    };
+
+    // ---------- charts (all modules) ----------
+    out.tipStyle = { position: 'absolute', bottom: '100%', marginBottom: 6, background: S.dark ? '#252d3a' : '#111725', color: '#fff', padding: '4px 8px', borderRadius: 5, font: "500 10.5px 'IBM Plex Mono',monospace", whiteSpace: 'nowrap', zIndex: 5, animation: 'dcin .1s ease', pointerEvents: 'none' };
+    const chartList = isSettings ? [] : this.buildCharts(T);
+    out.hasCharts = chartList.length > 0;
+    out.charts = chartList.map(c => Object.assign({}, c, {
+      style: { gridColumn: 'span ' + c.span, background: T.pnl, border: '1px solid ' + T.bd, borderRadius: 8, overflow: 'hidden', display: 'flex', flexDirection: 'column' },
+      barsWrapStyle: { padding: '16px 13px 12px', display: 'flex', alignItems: 'flex-end', gap: (c.bars && c.bars.length > 8) ? 5 : 8, height: (c.h || 150) + 'px' }
+    }));
+
+    // ---------- assistant ----------
+    const askBtnStyle = { height: 28, padding: '0 11px', borderRadius: 6, display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap', border: '1px solid ' + T.bd, background: S.chatOpen ? T.acs : 'transparent', color: S.chatOpen ? T.ac : T.fg };
+    Object.assign(out, {
+      askBtnStyle,
+      chatOpen: S.chatOpen, chatQ: S.chatQ, chatBusy: S.chatBusy,
+      toggleChat: () => this.setState(s => ({ chatOpen: !s.chatOpen })),
+      clearChat: () => this.setState({ chatLog: [{ role: 'bot', text: 'Cleared. What do you need to find?' }] }),
+      onChatChange: e => this.setState({ chatQ: e.target.value }),
+      onChatKey: e => { if (e.key === 'Enter') this.send(); },
+      sendChat: () => this.send(),
+      chatPanelStyle: { position: 'fixed', right: 0, top: 0, bottom: 0, width: 384, background: T.pnl, borderLeft: '1px solid ' + T.bd, zIndex: 95, display: 'flex', flexDirection: 'column', boxShadow: '-14px 0 40px rgba(0,0,0,.14)', animation: 'dcslide .16s ease' },
+      typingStyle: { alignSelf: 'flex-start', background: T.hov, color: T.mut, padding: '8px 12px', borderRadius: '10px 10px 10px 3px', fontSize: 12, animation: 'dcin .14s ease' },
+      chatInputStyle: { flex: 1, height: 34, borderRadius: 8, border: '1px solid ' + T.bd, background: S.dark ? '#0f151d' : '#fbfcfd', color: T.fg, padding: '0 11px', fontSize: 12.5, fontFamily: 'inherit', outline: 'none' },
+      chatSendStyle: { width: 34, height: 34, flex: 'none', borderRadius: 8, background: T.ac, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 14 },
+      chatChips: this.chatSuggestions().map(label => ({
+        label, onClick: () => this.send(label),
+        style: { padding: '5px 9px', borderRadius: 14, border: '1px solid ' + T.bd, fontSize: 10.5, cursor: 'pointer', color: T.mut, whiteSpace: 'nowrap' }
+      })),
+      chatLog: S.chatLog.map(msg => {
+        const mine = msg.role === 'user';
+        return {
+          text: msg.text,
+          rowStyle: { display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start', animation: 'dcin .14s ease' },
+          bubbleStyle: {
+            maxWidth: '88%', padding: '9px 12px', fontSize: 12.5, lineHeight: 1.5,
+            borderRadius: mine ? '10px 10px 3px 10px' : '10px 10px 10px 3px',
+            background: mine ? T.ac : T.hov, color: mine ? '#fff' : T.fg,
+            border: mine ? 'none' : '1px solid ' + T.bd
+          },
+          hasResults: !!(msg.results && msg.results.length),
+          hasFacts: !!(msg.facts && msg.facts.length),
+          facts: msg.facts || [],
+          results: (msg.results || []).map(h => {
+            const cfgH = this.tables[h.mod], colsH = cfgH.cols;
+            const badgeCol = colsH.find(c => c.badge) || {};
+            const st = h.row[badgeCol.k];
+            const moneyCol = colsH.find(c => c.money);
+            const bc = this.badgeColors[st] || T.mut;
+            return {
+              id: h.row[colsH[0].k], title: h.row[colsH[1].k],
+              status: st || '—',
+              amount: moneyCol ? this.money(Number(h.row[moneyCol.k]) || 0) : '',
+              sub: cfgH.title + ' · ' + (h.row.country || h.row.site || h.row.plant || h.row.dept || h.row.type || ''),
+              onClick: () => this.setState({ mod: h.mod, q: '', filter: 'All', sortKey: null, sel: {}, drawer: h.row }),
+              style: { border: '1px solid ' + T.bd, borderRadius: 8, padding: '9px 11px', cursor: 'pointer', background: T.pnl },
+              badgeStyle: { padding: '1px 6px', borderRadius: 4, fontSize: 9.5, fontWeight: 600, color: bc, background: this.hexA(bc, S.dark ? .2 : .11), whiteSpace: 'nowrap' }
+            };
+          })
+        };
+      })
+    });
+
+    // ---------- customization controls ----------
+    const segWrapStyle = { display: 'inline-flex', border: '1px solid ' + T.bd, borderRadius: 7, overflow: 'hidden', background: S.dark ? '#0f151d' : '#fbfcfd' };
+    const seg = (opts, cur, set) => opts.map(o => ({
+      label: o, onClick: () => set(o),
+      style: { padding: '6px 13px', fontSize: 11.5, cursor: 'pointer', whiteSpace: 'nowrap', fontWeight: o === cur ? 600 : 400, background: o === cur ? T.ac : 'transparent', color: o === cur ? '#fff' : T.fg, borderRight: '1px solid ' + T.bd }
+    }));
+
+    out.settingGroups = [
+      {
+        label: 'ACCENT COLOR', isSwatch: true, hint: 'Blue is the ERP default — the most widely used enterprise-software accent.',
+        swatches: Object.keys(this.accents).map(name => ({
+          label: name, mark: S.accent === name ? '✓' : '',
+          onClick: () => this.setState({ accent: name }),
+          style: { width: 30, height: 30, borderRadius: 8, cursor: 'pointer', background: this.accents[name], display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12, boxShadow: S.accent === name ? '0 0 0 2px ' + T.pnl + ', 0 0 0 4px ' + this.accents[name] : 'none' }
+        }))
+      },
+      { label: 'APPEARANCE', isSeg: true, segWrapStyle, hint: 'Dark mode recolors panels, tables and charts.', segs: seg(['Light', 'Dark'], S.dark ? 'Dark' : 'Light', v => this.setState({ dark: v === 'Dark' })) },
+      { label: 'ROW DENSITY', isSeg: true, segWrapStyle, hint: 'Compact fits ~40% more rows per screen.', segs: seg(['Compact', 'Comfortable', 'Relaxed'], S.density, v => this.setState({ density: v })) },
+      { label: 'SIDEBAR', isSeg: true, segWrapStyle, hint: 'Collapsed shows module codes only.', segs: seg(['Expanded', 'Collapsed'], S.collapsed ? 'Collapsed' : 'Expanded', v => this.setState({ collapsed: v === 'Collapsed' })) },
+      {
+        label: 'FONT SIZE', isSlider: true, min: 0.85, max: 1.3, step: 0.05, value: S.fs,
+        readout: Math.round(S.fs * 100) + '%', hint: 'Scales all body and table type.',
+        onChange: e => this.setState({ fs: Number(e.target.value) }),
+        sliderStyle: { flex: 1, accentColor: T.ac, height: 4 }
+      }
+    ];
+
+    // ---------- dashboard ----------
+    if (isDashboard) {
+      out.kpis = [
+        { label: 'REVENUE MTD', value: '€5.94M', d: '+12.4%', up: true },
+        { label: 'OPEN ORDERS', value: '312', d: '+4.1%', up: true },
+        { label: 'STOCK VALUE', value: '€41.2M', d: '−2.7%', up: false },
+        { label: 'OVERDUE AR', value: '€360.6K', d: '+18.3%', up: false }
+      ].map(k => ({
+        label: k.label, value: k.value, delta: k.d,
+        deltaStyle: { fontSize: 11, marginTop: 5, fontWeight: 600, color: k.up ? '#0d9488' : '#dc2626' }
+      }));
+
+      const max = Math.max.apply(null, this.revenue);
+      const bars = this.revenue.map((v, i) => ({
+        label: this.months[i], hot: S.tip === i,
+        tip: this.months[i] + ' · €' + v.toFixed(1) + 'M',
+        onEnter: () => this.setState({ tip: i }),
+        onLeave: () => this.setState({ tip: null }),
+        barStyle: {
+          width: '100%', height: (v / max * 100) + '%', borderRadius: '3px 3px 0 0',
+          background: S.tip === i ? T.ac : this.hexA(T.ac, S.dark ? .45 : .34),
+          transition: 'background .12s'
+        }
+      }));
+      out.tipStyle = { position: 'absolute', bottom: '100%', marginBottom: 6, background: S.dark ? '#252d3a' : '#111725', color: '#fff', padding: '4px 8px', borderRadius: 5, font: "500 10.5px 'IBM Plex Mono',monospace", whiteSpace: 'nowrap', zIndex: 5, animation: 'dcin .1s ease' };
+
+      const pipeline = [
+        { label: 'Quotation', n: 84, v: 2.1 }, { label: 'Confirmed', n: 126, v: 4.8 },
+        { label: 'In production', n: 61, v: 3.2 }, { label: 'Shipped', n: 33, v: 1.4 },
+        { label: 'Blocked', n: 8, v: .3 }
+      ];
+      const pmax = Math.max.apply(null, pipeline.map(p => p.n));
+      out.pipeline = pipeline.map(p => ({
+        label: p.label, right: p.n + ' · €' + p.v.toFixed(1) + 'M',
+        fillStyle: { width: (p.n / pmax * 100) + '%', height: '100%', borderRadius: 4, background: T.ac }
+      }));
+
+      const lowstock = this.tables.inventory.rows.filter(r => r.status !== 'OK').slice(0, 6).map(r => ({
+        title: r.name, sub: r.id + ' · ' + r.site, right: r.onhand + ' / ' + r.reorder,
+        onClick: () => this.setState({ mod: 'inventory', q: r.id }),
+        dotStyle: { width: 7, height: 7, borderRadius: '50%', flex: 'none', background: this.badgeColors[r.status] },
+        rightStyle: { font: "500 11px 'IBM Plex Mono',monospace", color: this.badgeColors[r.status], flex: 'none' }
+      }));
+
+      const activity = [
+        { t: 'SO-24188 confirmed by L. Kraus', s: 'Sales · 14 lines · €184 200', r: '2m' },
+        { t: 'PO-90412 awaiting approval', s: 'Procurement · Steinmetz Metallwerke', r: '19m' },
+        { t: 'MO-7728 flagged material shortage', s: 'Production · Munich plant', r: '54m' },
+        { t: 'INV-2026-4412 became overdue', s: 'Finance · 21 days · €184 200', r: '2h' },
+        { t: 'Cycle count posted · Rotterdam', s: 'Inventory · 312 SKUs · −0.4% variance', r: '4h' },
+        { t: 'EMP-3306 entered notice period', s: 'HCM · Procurement · Munich', r: '6h' }
+      ].map(a => ({
+        title: a.t, sub: a.s, right: a.r,
+        onClick: () => this.toast('Opening audit entry', 'ok'),
+        dotStyle: { width: 7, height: 7, borderRadius: '50%', flex: 'none', background: this.hexA(T.ac, .8) },
+        rightStyle: { font: "400 10px 'IBM Plex Mono',monospace", color: T.mut, flex: 'none' }
+      }));
+
+      const defs = {
+        kpis: { label: 'Key figures', note: 'group · EUR', span: 12, isKpis: true },
+        revenue: { label: 'Revenue', note: 'rolling 12 months · €M', span: 7, isBars: true, bars },
+        pipeline: { label: 'Order pipeline', note: 'by stage', span: 5, isPipeline: true },
+        lowstock: { label: 'Replenishment alerts', note: 'below reorder point', span: 5, isList: true, items: lowstock },
+        activity: { label: 'Activity stream', note: 'all modules', span: 7, isList: true, items: activity }
+      };
+      const order = S.order.filter(id => !S.hidden[id]);
+      out.widgets = order.map((id, i) => {
+        const d = defs[id];
+        const span = S.wide[id] ? Math.min(12, d.span + 3) : d.span;
+        return Object.assign({}, d, {
+          barGap: id === 'revenue' ? '7px' : '4px',
+          style: {
+            gridColumn: 'span ' + span, background: T.pnl, border: '1px solid ' + T.bd,
+            borderRadius: 8, overflow: 'hidden', outline: S.layoutEdit ? '1px dashed ' + T.ac : 'none'
+          },
+          microBtn: { width: 20, height: 20, borderRadius: 4, border: '1px solid ' + T.bd, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 9, color: T.mut },
+          onLeft: () => this.moveWidget(id, -1),
+          onRight: () => this.moveWidget(id, 1),
+          onWide: () => this.setState(s => ({ wide: Object.assign({}, s.wide, { [id]: !s.wide[id] }) })),
+          onHide: () => this.setState(s => ({ hidden: Object.assign({}, s.hidden, { [id]: true }) }))
+        });
+      });
+      out.hiddenWidgets = Object.keys(defs).filter(id => S.hidden[id]).map(id => ({
+        label: defs[id].label, chipStyle: chipBtnStyle,
+        onShow: () => this.setState(s => { const h = Object.assign({}, s.hidden); delete h[id]; return { hidden: h }; })
+      }));
+      out.layoutEdit = S.layoutEdit;
+      out.layoutEditLabel = S.layoutEdit ? 'Done editing' : 'Edit layout';
+      out.toggleLayoutEdit = () => this.setState(s => ({ layoutEdit: !s.layoutEdit }));
+    }
+
+    // ---------- reports ----------
+    if (isReports) {
+      const mn = Math.min.apply(null, this.marginPts), mx = Math.max.apply(null, this.marginPts);
+      const pts = this.marginPts.map((v, i) => {
+        const x = (i / (this.marginPts.length - 1)) * 600;
+        const y = 180 - ((v - mn) / (mx - mn)) * 150;
+        return x.toFixed(1) + ',' + y.toFixed(1);
+      });
+      out.marginLine = pts.join(' ');
+      out.marginArea = '0,200 ' + pts.join(' ') + ' 600,200';
+      const regs = [{ l: 'Germany', v: 18.4 }, { l: 'Netherlands', v: 11.2 }, { l: 'Italy', v: 8.7 }, { l: 'France', v: 7.9 }, { l: 'Poland', v: 5.1 }, { l: 'Nordics', v: 4.3 }];
+      const rmax = regs[0].v;
+      out.regions = regs.map(r => ({
+        label: r.l, right: '€' + r.v.toFixed(1) + 'M',
+        fillStyle: { width: (r.v / rmax * 100) + '%', height: '100%', borderRadius: 4, background: T.ac }
+      }));
+    }
+
+    // ---------- table ----------
+    if (isTable) {
+      const cols = this.visibleCols();
+      const statusKey = cfg.cols.find(c => c.badge);
+      let rows = this.allRows();
+
+      const counts = { All: rows.length };
+      if (statusKey) rows.forEach(r => { counts[r[statusKey.k]] = (counts[r[statusKey.k]] || 0) + 1; });
+      out.filters = Object.keys(counts).slice(0, 7).map(k => {
+        const on = S.filter === k;
+        return {
+          label: k, count: counts[k],
+          onClick: () => this.setState({ filter: k, sel: {} }),
+          style: { height: 26, padding: '0 10px', borderRadius: 6, cursor: 'pointer', fontSize: 11.5, display: 'inline-flex', alignItems: 'center', border: '1px solid ' + (on ? T.ac : T.bd), background: on ? T.acs : 'transparent', color: on ? T.ac : T.fg, fontWeight: on ? 600 : 400, whiteSpace: 'nowrap' }
+        };
+      });
+
+      if (S.filter !== 'All' && statusKey) rows = rows.filter(r => r[statusKey.k] === S.filter);
+      if (S.q.trim()) {
+        const q = S.q.toLowerCase();
+        rows = rows.filter(r => cfg.cols.some(c => String(r[c.k] ?? '').toLowerCase().includes(q)));
+      }
+      if (S.sortKey) {
+        const k = S.sortKey, dir = S.sortDir;
+        rows = rows.slice().sort((a, b) => {
+          const x = a[k], y = b[k];
+          if (typeof x === 'number' && typeof y === 'number') return (x - y) * dir;
+          return String(x).localeCompare(String(y)) * dir;
+        });
+      }
+
+      out.heads = cols.map(c => ({
+        label: c.l, arrow: S.sortKey === c.k ? (S.sortDir > 0 ? '↑' : '↓') : '',
+        onClick: () => this.sortBy(c.k),
+        style: {
+          textAlign: c.align || 'left', padding: (cy + 2) + 'px 10px', width: c.w,
+          font: "500 9.5px 'IBM Plex Mono',monospace", letterSpacing: '.07em',
+          color: S.sortKey === c.k ? T.ac : T.mut, textTransform: 'uppercase',
+          borderBottom: '1px solid ' + T.bd, cursor: 'pointer', userSelect: 'none',
+          background: S.dark ? 'rgba(255,255,255,.02)' : 'rgba(0,0,0,.012)', whiteSpace: 'nowrap'
+        }
+      }));
+
+      const box = on => ({ width: 14, height: 14, borderRadius: 3, border: '1px solid ' + (on ? T.ac : T.bd), background: on ? T.ac : 'transparent', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, cursor: 'pointer', flex: 'none' });
+
+      out.checkHeadStyle = { width: 34, padding: (cy + 2) + 'px 0 ' + (cy + 2) + 'px 12px', borderBottom: '1px solid ' + T.bd, background: S.dark ? 'rgba(255,255,255,.02)' : 'rgba(0,0,0,.012)' };
+      const allOn = rows.length > 0 && rows.every(r => S.sel[r.id]);
+      out.allBoxStyle = box(allOn);
+      out.allMark = allOn ? '✓' : '';
+      out.toggleAll = () => this.setState(s => {
+        if (allOn) return { sel: {} };
+        const sel = {}; rows.forEach(r => sel[r.id] = true); return { sel };
+      });
+
+      out.rows = rows.map((r, i) => {
+        const on = !!S.sel[r.id];
+        return {
+          style: { background: on ? T.acs : 'transparent', borderBottom: '1px solid ' + this.hexA(S.dark ? '#ffffff' : '#000000', S.dark ? .05 : .045) },
+          checkCellStyle: { padding: cy + 'px 0 ' + cy + 'px 12px', verticalAlign: 'middle' },
+          boxStyle: box(on), mark: on ? '✓' : '',
+          onSelect: () => this.setState(s => Object.assign({}, { sel: Object.assign({}, s.sel, { [r.id]: !s.sel[r.id] }) })),
+          cells: cols.map(c => {
+            const editing = S.editing === r.id + '|' + c.k;
+            const isBadge = !!c.badge;
+            const col = this.badgeColors[r[c.k]] || T.mut;
+            return {
+              text: this.fmt(c, r[c.k]),
+              editing, plain: !editing && !isBadge, badge: !editing && isBadge,
+              hint: c.edit ? 'Double-click to edit' : '',
+              onClick: () => { if (!editing) this.setState({ drawer: r }); },
+              onEdit: c.edit ? (e => { e.stopPropagation(); this.startEdit(r.id, c.k, r[c.k]); }) : null,
+              style: {
+                padding: cy + 'px 10px', textAlign: c.align || 'left',
+                fontFamily: c.mono || c.money ? "'IBM Plex Mono',monospace" : 'inherit',
+                fontSize: c.mono || c.money ? '.94em' : '1em',
+                fontWeight: c.k === 'id' ? 500 : 400,
+                color: c.k === 'id' ? T.ac : T.fg,
+                cursor: 'pointer', whiteSpace: 'nowrap',
+                borderRight: c.edit ? '1px dashed ' + this.hexA(S.dark ? '#ffffff' : '#000000', .07) : 'none'
+              },
+              badgeStyle: { display: 'inline-flex', alignItems: 'center', padding: '2px 7px', borderRadius: 4, fontSize: '.86em', fontWeight: 600, color: col, background: this.hexA(col, S.dark ? .2 : .11), whiteSpace: 'nowrap' }
+            };
+          })
+        };
+      });
+
+      out.editVal = S.editVal;
+      out.onEditChange = e => this.setState({ editVal: e.target.value });
+      out.commitEdit = this.commitEdit;
+      out.onEditKey = e => { if (e.key === 'Enter') this.commitEdit(); if (e.key === 'Escape') this.setState({ editing: null }); };
+      out.editInputStyle = { width: '100%', border: '1px solid ' + T.ac, borderRadius: 4, padding: '2px 6px', font: 'inherit', fontSize: '.94em', background: T.pnl, color: T.fg, outline: 'none', textAlign: 'inherit' };
+
+      out.rowCountLabel = rows.length + ' of ' + this.allRows().length + ' records';
+      const selIds = Object.keys(S.sel).filter(k => S.sel[k]);
+      out.hasSel = selIds.length > 0;
+      out.selCount = selIds.length;
+      out.bulkBarStyle = { display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: T.acs, borderBottom: '1px solid ' + T.bd, fontSize: 12, color: T.ac, animation: 'dcin .14s ease' };
+      out.bulkBtnStyle = { height: 24, padding: '0 10px', borderRadius: 5, border: '1px solid ' + this.hexA(T.ac, .4), color: T.ac, display: 'inline-flex', alignItems: 'center', cursor: 'pointer', fontSize: 11.5, background: T.pnl };
+      out.clearSel = () => this.setState({ sel: {} });
+      out.bulkApprove = () => { this.toast(selIds.length + ' records approved', 'ok'); this.setState({ sel: {} }); };
+      out.bulkExport = () => this.toast('Export queued · ' + selIds.length + ' rows → CSV', 'ok');
+      out.bulkDelete = () => {
+        const rm = Object.assign({}, S.removed[S.mod] || {});
+        selIds.forEach(id => rm[id] = true);
+        this.setState(s => ({ removed: Object.assign({}, s.removed, { [S.mod]: rm }), sel: {} }));
+        this.toast(selIds.length + ' records deleted', 'warn');
+      };
+
+      const hid = S.cols[S.mod] || {};
+      out.visibleCount = cols.length;
+      out.colMenu = S.colMenu;
+      out.toggleColMenu = () => this.setState(s => ({ colMenu: !s.colMenu }));
+      out.colToggles = cfg.cols.map(c => ({
+        label: c.l, mark: hid[c.k] ? '' : '✓', boxStyle: box(!hid[c.k]),
+        onClick: () => this.setState(s => {
+          const cur = Object.assign({}, s.cols[s.mod] || {});
+          cur[c.k] = !cur[c.k];
+          return { cols: Object.assign({}, s.cols, { [s.mod]: cur }) };
+        })
+      }));
+
+      // modal form
+      out.modal = S.modal;
+      out.modalTitle = 'New ' + cfg.noun.toLowerCase();
+      out.openModal = () => this.setState({ modal: true, form: {}, errs: {} });
+      out.closeModal = () => this.setState({ modal: false });
+      const formCols = cfg.cols.slice(0, 6);
+      out.formFields = formCols.map(c => {
+        const opts = c.badge ? Array.from(new Set(cfg.rows.map(r => r[c.k]))) : null;
+        return {
+          label: c.l + (c.k === 'id' || c.k === formCols[1].k ? ' *' : ''),
+          value: S.form[c.k] ?? '', ph: c.money ? '0' : c.l,
+          isSelect: !!opts, isText: !opts, options: opts || [],
+          error: S.errs[c.k] || '',
+          wrapStyle: { gridColumn: c.w > 180 ? 'span 2' : 'span 1' },
+          onChange: e => this.setState(s => ({ form: Object.assign({}, s.form, { [c.k]: e.target.value }) })),
+          inputStyle: { width: '100%', height: 30, borderRadius: 6, border: '1px solid ' + (S.errs[c.k] ? '#dc2626' : T.bd), background: S.dark ? '#0f151d' : '#fbfcfd', color: T.fg, padding: '0 9px', fontSize: 12, fontFamily: 'inherit', outline: 'none' }
+        };
+      });
+      out.saveForm = () => {
+        const req = [cfg.cols[0].k, cfg.cols[1].k];
+        const errs = {};
+        req.forEach(k => { if (!String(S.form[k] || '').trim()) errs[k] = 'Required'; });
+        if (Object.keys(errs).length) { this.setState({ errs }); this.toast('Fix ' + Object.keys(errs).length + ' field(s) before saving', 'err'); return; }
+        const row = {};
+        cfg.cols.forEach(c => {
+          let v = S.form[c.k];
+          if (v === undefined || v === '') v = c.money || c.mono ? 0 : '—';
+          else if (c.money) v = Number(String(v).replace(/[^\d.-]/g, '')) || 0;
+          row[c.k] = v;
+        });
+        if (!row[cfg.cols.find(c => c.badge).k] || row[cfg.cols.find(c => c.badge).k] === '—') row[cfg.cols.find(c => c.badge).k] = cfg.rows[0][cfg.cols.find(c => c.badge).k];
+        this.setState(s => ({ extra: Object.assign({}, s.extra, { [s.mod]: [row].concat(s.extra[s.mod] || []) }), modal: false }));
+        this.toast(cfg.noun + ' ' + row[cfg.cols[0].k] + ' created', 'ok');
+      };
+    }
+
+    // ---------- drawer ----------
+    out.drawer = S.drawer;
+    if (S.drawer && cfg) {
+      const r = S.drawer;
+      out.drawerStyle = { position: 'fixed', right: 0, top: 0, bottom: 0, width: 460, background: T.pnl, borderLeft: '1px solid ' + T.bd, zIndex: 65, display: 'flex', flexDirection: 'column', animation: 'dcslide .16s ease' };
+      out.drawerKicker = cfg.noun.toUpperCase();
+      out.drawerTitle = String(r[cfg.cols[0].k]) + ' · ' + String(r[cfg.cols[1].k]);
+      out.drawerFields = cfg.cols.map(c => ({ label: c.l.toUpperCase(), value: this.fmt(c, r[c.k]) }));
+      out.drawerLog = [
+        { text: 'Record created in ' + cfg.title.toLowerCase(), when: '2026-07-28 09:14 · system' },
+        { text: 'Approved by L. Kraus', when: '2026-07-29 11:02 · workflow' },
+        { text: 'Posted to general ledger', when: '2026-08-01 07:40 · FI batch' },
+        { text: 'Last modified by current user', when: 'Today 08:11 · manual' }
+      ].map((l, i) => ({ text: l.text, when: l.when, dotStyle: { width: 8, height: 8, borderRadius: '50%', background: i === 0 ? T.ac : this.hexA(T.ac, .35), flex: 'none', marginTop: 3 } }));
+    }
+    out.closeDrawer = () => this.setState({ drawer: null });
+    out.drawerApprove = () => { this.toast('Record approved · workflow advanced', 'ok'); this.setState({ drawer: null }); };
+    out.drawerDuplicate = () => this.toast('Draft copy created', 'ok');
+    out.modalStyle = { position: 'fixed', left: '50%', top: '9vh', transform: 'translateX(-50%)', width: 620, maxWidth: '92vw', background: T.pnl, border: '1px solid ' + T.bd, borderRadius: 10, zIndex: 75, boxShadow: '0 24px 60px rgba(0,0,0,.32)', animation: 'dcin .15s ease' };
+    if (!isTable) { out.modal = false; out.formFields = []; out.openModal = () => {}; out.closeModal = () => {}; out.saveForm = () => {}; out.modalTitle = ''; }
+
+    return out;
+  }
+
+  moveWidget(id, d) {
+    this.setState(s => {
+      const o = s.order.slice();
+      const i = o.indexOf(id), j = i + d;
+      if (j < 0 || j >= o.length) return {};
+      o[i] = o[j]; o[j] = id;
+      return { order: o };
+    });
+  }
+}
+</script>
+</body>
+</html>

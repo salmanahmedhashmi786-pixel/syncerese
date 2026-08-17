@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Syncrèse</title>
+    <!--
+      This page is bundled with the binary and is the ONLY page in this
+      application with IPC access. It never loads anything remote — the
+      customer's instance opens in a separate window that has no IPC at all.
+      See src-tauri/src/lib.rs for why that split is forced rather than chosen.
+    -->
+    <link rel="stylesheet" href="shell.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <div class="mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="34" height="34">
+          <path
+            d="M16 2c3 5 9 11 14 14-5 3-11 9-14 14-3-5-9-11-14-14 5-3 11-9 14-14z"
+            fill="currentColor"
+          />
+        </svg>
+      </div>
+      <h1>Syncrèse</h1>
+      <p class="sub">Connect this computer to your workspace.</p>
+
+      <form id="connect" novalidate>
+        <label for="origin">WORKSPACE ADDRESS</label>
+        <input
+          id="origin"
+          type="text"
+          inputmode="url"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="erp.yourcompany.com"
+        />
+        <p class="hint">
+          The address you use in the browser. It must be https — your session cookie travels
+          over it.
+        </p>
+
+        <label for="code">PAIRING CODE</label>
+        <input
+          id="code"
+          type="text"
+          autocomplete="off"
+          spellcheck="false"
+          maxlength="9"
+          placeholder="XXXX-XXXX"
+        />
+        <p class="hint">
+          In the browser, sign in and open <strong>Settings → Devices</strong>, then choose
+          “Pair a computer”. The code lasts ten minutes.
+        </p>
+
+        <p id="error" class="error" role="alert" hidden></p>
+
+        <button id="submit" type="submit">Connect</button>
+      </form>
+
+      <p class="foot">
+        Pairing records this computer so an administrator can see it and revoke it. You still
+        sign in as normal, and nothing is stored on this machine except the workspace address.
+      </p>
+    </main>
+
+    <script type="module" src="shell.js"></script>
+  </body>
+</html>
