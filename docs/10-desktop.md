@@ -2,11 +2,10 @@
 
 A Tauri v2 shell around a deployed Syncrèse instance. Source in [`desktop/`](../desktop).
 
-> **Not compiled.** There is no Rust toolchain — and no administrator rights to install a
-> C++ linker — in the environment this was written in, so
-> the Rust and the bundle configuration are unbuilt. The server half — pairing, heartbeat,
-> revocation, the Devices panel — is tested and was exercised end to end against a running
-> instance. Treat "it builds" as the first thing to establish, not as given.
+> **Built and verified.** `Syncrese_1.0.0_x64-setup.exe`, an MSI and the standalone binary
+> are produced by the steps below. The window opens, WebView2 renders the pairing UI, and
+> the icon and version metadata are embedded correctly. The installers are **unsigned** —
+> see Signing.
 
 ---
 
@@ -83,30 +82,60 @@ the intent is to remove someone, deactivate the member instead.
 
 ### Prerequisites
 
-Two things, and on Windows the second one is the awkward one.
+**Windows needs no administrator rights.** An earlier version of this page said it did — that
+Tauri required Visual Studio Build Tools and an elevated shell. That is the documented path,
+but it is not the only one, and the alternative installs entirely into your user profile.
 
-**Rust.** User-scoped, no administrator needed:
+Two commands, neither elevated:
 
 ```powershell
-winget install --id Rustlang.Rustup -e
+winget install --id BrechtSanders.WinLibs.POSIX.UCRT -e --scope user
 ```
 
-**A C++ linker.** Tauri compiles to a native binary, and Rust's default Windows target
-(`x86_64-pc-windows-msvc`) links with Microsoft's linker. It ships in Visual Studio Build
-Tools: several gigabytes, and **the install requires administrator rights**.
+Rustup has no user-scope winget package, so fetch it directly and ask for the GNU toolchain:
+
+```powershell
+Invoke-WebRequest https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe -OutFile "$env:TEMP\rustup-init.exe"
+& "$env:TEMP\rustup-init.exe" -y --default-toolchain stable-x86_64-pc-windows-gnu --profile minimal
+```
+
+The GNU toolchain (`x86_64-pc-windows-gnu`) links with MinGW rather than Microsoft's
+`link.exe`. It is not Tauri's officially supported Windows target — but it builds this
+application, produces both bundles, and the result runs.
+
+If you would rather stay on the supported MSVC path, install Visual Studio Build Tools with
+the C++ workload from an **elevated** shell and skip the two commands above:
 
 ```powershell
 winget install --id Microsoft.VisualStudio.2022.BuildTools -e --override "--quiet --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
 ```
 
-Run that from an elevated PowerShell. Without it `cargo build` gets all the way through
-compiling and then fails at the link step with `link.exe not found`, which reads like a Rust
-problem and is not one.
-
-WebView2 is already present on Windows 11, and the bundle downloads it if missing.
+WebView2 is already present on Windows 11; the bundle downloads it if missing.
 
 - **macOS** — Xcode command line tools (`xcode-select --install`).
 - **Linux** — `libwebkit2gtk-4.1-dev`, `build-essential`, `libssl-dev`, `libayatana-appindicator3-dev`, `librsvg2-dev`.
+
+### Four things that will go wrong on the GNU path
+
+All four cost a build each, and none of them says what it means.
+
+**`error calling dlltool 'dlltool.exe': program not found`.** It exists, in
+`…/rustlib/x86_64-pc-windows-gnu/bin/self-contained/`, which cargo does not put on PATH.
+
+**`dlltool.exe: CreateProcess`.** dlltool found, but it shells out to the GNU assembler and
+rustup's minimal profile ships no `as.exe`. This is what the WinLibs install above fixes; put
+its `mingw64\bin` **ahead** of the rustup toolchain on PATH so the complete set wins.
+
+**`cc1.exe: fatal error: Claude\ERP\: No such file or directory`.** `windres` cannot parse
+spaces in paths. The repository lives at `D:\Softwares Claude\ERP system`, and windres splits
+it at the space. Build from a path without spaces — copy `desktop/` to `C:\syncbuild\` and
+build there. Worth knowing generally: this directory name will break other Windows toolchains
+in equally cryptic ways.
+
+**`Permission updater:default not found`.** A capability in `capabilities/` naming a plugin
+that is not loaded. Tauri validates permissions against registered plugins at build time and
+refuses — correctly. This one was real: the updater was removed and its capability entry was
+not.
 
 ### Then build it
 

@@ -451,7 +451,8 @@ Honest gaps, so they are not discovered at the wrong moment:
   Extended-B, so Polish, Czech, Hungarian, Romanian and Baltic names render correctly. Greek
   and Cyrillic do not — widening the range in `scripts/build-pdf-font.py` is the fix and costs
   a few kilobytes.
-- **The desktop shell is written but not compiled.** Its server side — pairing, heartbeat,
-  revocation, the Devices panel — is tested and working. The Tauri application itself has
-  never been built, and needs a Rust toolchain plus code-signing certificates you have to
-  obtain against your registered business. See [docs/10-desktop.md](10-desktop.md).
+- **The desktop app is unsigned.** It builds and runs — installer, MSI and standalone binary,
+  with the pairing window verified — but nothing signs it, so Windows SmartScreen warns every
+  user who runs the installer. A code-signing certificate is a purchase against your
+  registered business, and no amount of build configuration substitutes for it. See
+  [docs/10-desktop.md](10-desktop.md).

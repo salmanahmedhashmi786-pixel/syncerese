@@ -102,5 +102,5 @@ user-defined custom fields that become filterable and analysable without a migra
 Listed honestly in [deployment](docs/03-deployment.md#not-yet-covered) so they are not
 discovered at the wrong moment. In short: no e-invoicing transmission adapters (each needs an
 accredited access point, which is a commercial relationship rather than code); PDFs cover
-Latin scripts only; the desktop shell is written and its server side tested, but the Tauri
-application has never been compiled.
+Latin scripts only; and the desktop app builds and runs but ships **unsigned**, so Windows
+SmartScreen warns every user until a code-signing certificate is bought.
