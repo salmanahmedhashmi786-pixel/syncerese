@@ -44,7 +44,7 @@ Add two repository secrets under Settings → Secrets and variables → Actions:
 
 | Secret | Value |
 | --- | --- |
-| `SYNCRESE_BASE_URL` | your production URL, e.g. `https://syncerese-gamma.vercel.app` |
+| `SYNCRESE_BASE_URL` | your production URL, e.g. `https://syncrese.vercel.app` — no trailing slash |
 | `SYNCRESE_CRON_SECRET` | the same `CRON_SECRET` you set in Vercel |
 
 Then run it once by hand from the Actions tab to confirm it authenticates.
