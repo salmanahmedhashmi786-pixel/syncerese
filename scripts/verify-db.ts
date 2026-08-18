@@ -305,25 +305,38 @@ async function migrationChecks(app: Client) {
  * inheritance or search_path quirk still lets rows through.
  */
 async function liveIsolationCheck(app: Client) {
-  await app.query(`select set_config('app.org_id', '', true)`)
-  const { rows } = await app.query<{ n: string }>(`select count(*) as n from organizations`)
-  add(
-    'an unscoped query returns nothing',
-    rows[0]!.n === '0',
-    rows[0]!.n === '0'
-      ? 'a query with no app.org_id sees zero rows, as it must'
-      : `returned ${rows[0]!.n} organization(s) with NO tenant scope set — isolation is not working`,
-  )
+  // EVERY QUERY HERE RUNS INSIDE ONE EXPLICIT TRANSACTION.
+  //
+  // `set_config(key, value, true)` is transaction-LOCAL, and node-postgres runs
+  // each query in its own implicit transaction, so a scope set by one statement
+  // is already gone by the next. This check used to set `app.org_id`, query in a
+  // fresh transaction where it no longer existed, see zero rows and report that
+  // isolation was broken.
+  //
+  // It never fired, because it only reaches that branch once an organization
+  // exists — and until the first real signup it took the "skipped, no
+  // organizations yet" path and reported OK. A check that passes for years and
+  // then fails the first time it has something to check is worse than no check.
+  //
+  // The application was always right: `withTenant` opens a real transaction and
+  // sets the scope inside it. This now does the same thing.
+  await app.query('BEGIN')
+  try {
+    await app.query(`select set_config('app.org_id', '', true)`)
+    const { rows } = await app.query<{ n: string }>(`select count(*) as n from organizations`)
+    add(
+      'an unscoped query returns nothing',
+      rows[0]!.n === '0',
+      rows[0]!.n === '0'
+        ? 'a query with no app.org_id sees zero rows, as it must'
+        : `returned ${rows[0]!.n} organization(s) with NO tenant scope set — isolation is not working`,
+    )
 
-  // And that it is not vacuous: with a scope set to an id that exists, the row
-  // comes back. A database that returns nothing for everything would pass the
-  // check above while being equally broken.
-  const any = await app.query<{ id: string }>(
-    `select id from organizations limit 1`,
-  )
-  if (any.rows.length === 0) {
+    // Not vacuous: with a scope set to an id that exists, the row comes back. A
+    // database that returned nothing for everything would pass the check above
+    // while being equally broken.
     const known = await app.query<{ id: string | null }>(
-      // Reachable through the SECURITY DEFINER function even with no scope.
+      // Through the SECURITY DEFINER function, which is reachable with no scope.
       `select organization_id as id from public.user_organizations(
          (select id from users limit 1)) limit 1`,
     )
@@ -336,6 +349,7 @@ async function liveIsolationCheck(app: Client) {
       )
       return
     }
+
     await app.query(`select set_config('app.org_id', $1, true)`, [id])
     const scoped = await app.query<{ n: string }>(`select count(*) as n from organizations`)
     add(
@@ -345,6 +359,9 @@ async function liveIsolationCheck(app: Client) {
         ? 'with a tenant scope set, exactly that tenant is visible'
         : `expected 1 organization with scope set, saw ${scoped.rows[0]!.n}`,
     )
+  } finally {
+    // Read-only throughout; roll back so nothing here can leave a mark.
+    await app.query('ROLLBACK')
   }
 }
 
