@@ -87,6 +87,17 @@ form.addEventListener('submit', async (event) => {
       return
     }
 
+    // An EMAIL ADDRESS is the mistake people actually make here, because every
+    // other field in every other setup form wants one. Left to itself the app
+    // prefixed it with https://, failed to resolve it, and reported "Could not
+    // reach that address" — technically true, useless to act on, and it happened
+    // in testing within a minute of the window opening.
+    const addressProblem = describeAddressProblem(origin)
+    if (addressProblem) {
+      showError(addressProblem)
+      return
+    }
+
     // Validated in Rust, which is also what stores it: https only, no embedded
     // credentials, origin only. Doing it there rather than here means the
     // check cannot be skipped by a different caller later.
@@ -129,6 +140,39 @@ form.addEventListener('submit', async (event) => {
 function normalise(input) {
   const trimmed = input.trim().replace(/\/+$/, '')
   return trimmed.includes('://') ? trimmed : `https://${trimmed}`
+}
+
+/**
+ * Why what was typed cannot be a workspace address, in words that say what to do
+ * instead. Returns null when it looks plausible — the real validation is in Rust,
+ * which is also what stores it; this only exists to fail EARLIER and more clearly
+ * than a DNS lookup does.
+ */
+function describeAddressProblem(input) {
+  const raw = input.trim()
+
+  if (raw.includes('@')) {
+    return 'That looks like an email address. Paste the web address you open in the browser, like https://example.syncrese.app.'
+  }
+
+  let url
+  try {
+    url = new URL(normalise(raw))
+  } catch {
+    return 'That is not a web address. It should look like https://example.syncrese.app.'
+  }
+
+  if (url.protocol !== 'https:' && url.hostname !== 'localhost') {
+    return 'The address must start with https:// — your session cookie travels over it.'
+  }
+
+  // A bare word with no dot is a hostname that cannot resolve on the internet.
+  // localhost is the exception, and it is a real one during development.
+  if (!url.hostname.includes('.') && url.hostname !== 'localhost') {
+    return 'That address is incomplete. It needs a full host name, like example.syncrese.app.'
+  }
+
+  return null
 }
 
 resume().then((resumed) => {
