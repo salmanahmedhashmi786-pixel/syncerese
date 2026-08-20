@@ -48,17 +48,34 @@ export const isDesktop = (): boolean => process.env.SYNCRESE_DESKTOP === '1'
  * controller at every login.
  */
 export function dataDir(): string {
-  const explicit = process.env.SYNCRESE_DATA_DIR?.trim()
+  const explicit = env('SYNCRESE_DATA_DIR')?.trim()
   if (explicit) return path.resolve(explicit)
 
   const base =
     process.platform === 'win32'
-      ? (process.env.LOCALAPPDATA ?? path.join(os.homedir(), 'AppData', 'Local'))
+      ? (env('LOCALAPPDATA') ?? path.join(os.homedir(), 'AppData', 'Local'))
       : process.platform === 'darwin'
         ? path.join(os.homedir(), 'Library', 'Application Support')
-        : (process.env.XDG_DATA_HOME ?? path.join(os.homedir(), '.local', 'share'))
+        : (env('XDG_DATA_HOME') ?? path.join(os.homedir(), '.local', 'share'))
 
   return path.join(base, 'Syncrese')
+}
+
+/**
+ * Reads an environment variable in a way the build's file tracer cannot fold.
+ *
+ * Written as `process.env.LOCALAPPDATA`, Next's tracer evaluates it AT BUILD
+ * TIME, resolves this function to a real directory on the build machine, and
+ * globs it looking for files to include. On Windows that walks into
+ * `AppData\Local\Application Data` — a legacy compatibility junction that
+ * points at its own parent and denies access by design — and the whole build
+ * fails with `EPERM: scandir`, naming a path nothing in this project mentions.
+ *
+ * Indexing with a variable defeats the constant folding. The value is identical
+ * at runtime; only the build-time analysis changes.
+ */
+function env(name: string): string | undefined {
+  return process.env[name]
 }
 
 export const databaseDir = (): string => path.join(dataDir(), 'database')

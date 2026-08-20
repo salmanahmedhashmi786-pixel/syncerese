@@ -1,5 +1,6 @@
 import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { PGlite } from '@electric-sql/pglite'
 import { drizzle } from 'drizzle-orm/pglite'
 import * as schema from './schema'
@@ -37,8 +38,45 @@ const cache = globalThis as unknown as {
   __syncreseLocalDb?: { client: PGlite; instance: AnyDb; ready: Promise<void> }
 }
 
+/**
+ * Where the .sql migrations are.
+ *
+ * `process.cwd()/drizzle` is right when running from the repository and wrong
+ * inside the packaged desktop app, where the server runs from its own bundle
+ * directory and the migrations are copied in beside it. The standalone build
+ * gets no say in what the working directory is, so this looks rather than
+ * assumes — and says all the places it looked when it finds nothing, because
+ * "ENOENT scandir drizzle" on a customer's machine is otherwise unactionable.
+ */
+async function migrationsDir(): Promise<string> {
+  const here = path.dirname(fileURLToPath(import.meta.url))
+  const candidates = [
+    process.env.SYNCRESE_MIGRATIONS_DIR,
+    path.resolve(process.cwd(), 'drizzle'),
+    // Packaged: beside the standalone server.
+    path.resolve(process.cwd(), '..', 'drizzle'),
+    // Bundled: relative to this module, wherever the bundler put it.
+    path.resolve(here, '..', '..', 'drizzle'),
+    path.resolve(here, '..', '..', '..', 'drizzle'),
+  ].filter((c): c is string => Boolean(c))
+
+  for (const dir of candidates) {
+    try {
+      await readdir(dir)
+      return dir
+    } catch {
+      /* try the next one */
+    }
+  }
+  throw new Error(
+    'Could not find the database migrations. Looked in:\n  ' +
+      candidates.join('\n  ') +
+      '\nSet SYNCRESE_MIGRATIONS_DIR if they live somewhere else.',
+  )
+}
+
 async function migrate(db: PGlite): Promise<void> {
-  const dir = path.resolve(process.cwd(), 'drizzle')
+  const dir = await migrationsDir()
   const files = (await readdir(dir)).filter((f) => f.endsWith('.sql')).sort()
 
   await db.exec(`

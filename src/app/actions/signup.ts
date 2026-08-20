@@ -6,7 +6,7 @@ import { db } from '@/db'
 import { withoutTenantScope } from '@/db/tenant'
 import { AppError } from '@/lib/errors'
 import { signUp } from '@/server/onboarding'
-import { signupMode } from '@/server/signup-mode'
+import { effectiveSignupMode } from '@/server/signup-mode'
 
 /**
  * Self-service signup.
@@ -34,7 +34,9 @@ export async function signUpAction(input: {
   countryCode?: string
   baseCurrency?: string
 }): Promise<Result> {
-  if (signupMode() !== 'open') {
+  // Desktop: open while no workspace exists, closed for ever after. See
+  // effectiveSignupMode — a desktop install has no operator to open it.
+  if ((await effectiveSignupMode()) !== 'open') {
     return {
       ok: false,
       error: 'This installation does not accept new organizations. Ask an administrator for an invitation.',

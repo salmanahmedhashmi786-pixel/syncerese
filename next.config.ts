@@ -13,6 +13,18 @@ const nextConfig: NextConfig = {
   // build-output surprises. VERCEL=1 is set by their builder.
   ...(process.env.VERCEL ? {} : { output: 'standalone' as const }),
 
+  /**
+   * Keep file tracing inside the project.
+   *
+   * Without this the tracer walks upward looking for a workspace root and, on
+   * Windows, ends up globbing the user's local application data — where
+   * `Application Data` is a legacy compatibility junction pointing at its own
+   * parent, access denied by design. The build then dies with `EPERM: scandir`
+   * on a path nothing in this repository mentions, which suggests nothing at
+   * all about the cause.
+   */
+  outputFileTracingRoot: __dirname,
+
   // The desktop shell (phase 9) loads this app over HTTPS from the hosted
   // origin; it is a client shell, not a static export. Nothing here assumes a
   // single region — see `organizations.region` in the schema.

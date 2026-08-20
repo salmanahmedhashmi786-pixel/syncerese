@@ -2,7 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/server/session'
-import { signupMode } from '@/server/signup-mode'
+import { effectiveSignupMode } from '@/server/signup-mode'
 import { SignInForm } from './SignInForm'
 
 export const metadata = { title: 'Sign in' }
@@ -18,7 +18,7 @@ export default async function SignInPage({
 
   const sp = await searchParams
   const error = Array.isArray(sp.error) ? sp.error[0] : sp.error
-  const canSignUp = signupMode() === 'open'
+  const canSignUp = (await effectiveSignupMode()) === 'open'
   const callbackUrl = Array.isArray(sp.callbackUrl) ? sp.callbackUrl[0] : sp.callbackUrl
 
   return (

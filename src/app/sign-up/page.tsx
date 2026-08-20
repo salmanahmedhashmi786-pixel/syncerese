@@ -2,7 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/server/session'
-import { signupMode } from '@/server/signup-mode'
+import { effectiveSignupMode } from '@/server/signup-mode'
 import { panelStyle } from '@/components/ui/primitives'
 import { SignUpForm } from './SignUpForm'
 
@@ -13,7 +13,7 @@ export default async function SignUpPage() {
   const { ctx } = await getSession()
   if (ctx) redirect('/dashboard')
 
-  const mode = signupMode()
+  const mode = await effectiveSignupMode()
 
   return (
     <main
