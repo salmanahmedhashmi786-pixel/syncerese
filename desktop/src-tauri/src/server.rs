@@ -14,12 +14,43 @@
 //! prints is forwarded to the shell window as a progress event, because two
 //! minutes of a motionless splash screen is indistinguishable from a hang.
 
-use std::io::{BufRead, BufReader};
+use std::fs::{create_dir_all, OpenOptions};
+use std::io::{BufRead, BufReader, Write};
+use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::sync::mpsc;
 use std::time::Duration;
 
 use tauri::{AppHandle, Emitter, Manager};
+
+/// Where diagnostics go.
+///
+/// A release build has `windows_subsystem = "windows"`, so there is no console
+/// and `println!` goes nowhere at all. Without a file, a failure to start is
+/// invisible from outside the application — which is exactly the state this
+/// code was in when it silently did nothing and the window sat on "Starting…".
+///
+/// Beside the data rather than beside the binary: the install directory may be
+/// read-only for a standard user, and this has to work when it is.
+fn log_path() -> PathBuf {
+    let base = std::env::var("LOCALAPPDATA")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| std::env::temp_dir());
+    base.join("Syncrese").join("logs")
+}
+
+pub fn log(line: &str) {
+    let dir = log_path();
+    let _ = create_dir_all(&dir);
+    if let Ok(mut file) = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(dir.join("desktop.log"))
+    {
+        let _ = writeln!(file, "{line}");
+    }
+    println!("{line}");
+}
 
 /// Generous, because the first run is genuinely slow and the failure mode of
 /// being too eager is worse: the user is told it did not start, while it is
@@ -41,6 +72,11 @@ pub fn start(app: &AppHandle, share_on_lan: bool) -> Result<(Child, String), Str
     let node = sidecar.join(if cfg!(windows) { "node.exe" } else { "node" });
     let launcher = sidecar.join("launcher.mjs");
 
+    log(&format!("--- starting, share_on_lan={share_on_lan}"));
+    log(&format!("sidecar   {}", sidecar.display()));
+    log(&format!("node      {} exists={}", node.display(), node.exists()));
+    log(&format!("launcher  {} exists={}", launcher.display(), launcher.exists()));
+
     if !node.exists() || !launcher.exists() {
         return Err(format!(
             "The application files are incomplete — expected a runtime and launcher in {}. \
@@ -57,7 +93,13 @@ pub fn start(app: &AppHandle, share_on_lan: bool) -> Result<(Child, String), Str
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .map_err(|e| format!("Could not start the application server: {e}"))?;
+        .map_err(|e| {
+            let message = format!("Could not start the application server: {e}");
+            log(&message);
+            message
+        })?;
+
+    log(&format!("spawned pid {}", child.id()));
 
     let stdout = child
         .stdout
@@ -81,7 +123,7 @@ pub fn start(app: &AppHandle, share_on_lan: bool) -> Result<(Child, String), Str
                 continue;
             }
             let _ = handle.emit("server-progress", line.clone());
-            println!("{line}");
+            log(&line);
         }
         // The stream ended. If that happened before the ready line, the server
         // died during startup and the waiting side must be told rather than left
@@ -99,7 +141,7 @@ pub fn start(app: &AppHandle, share_on_lan: bool) -> Result<(Child, String), Str
         std::thread::spawn(move || {
             for line in BufReader::new(stderr).lines().map_while(Result::ok) {
                 let _ = handle.emit("server-progress", line.clone());
-                eprintln!("{line}");
+                log(&format!("stderr: {line}"));
             }
         });
     }
@@ -107,10 +149,12 @@ pub fn start(app: &AppHandle, share_on_lan: bool) -> Result<(Child, String), Str
     match rx.recv_timeout(READY_TIMEOUT) {
         Ok(Ok(url)) => Ok((child, url)),
         Ok(Err(message)) => {
+            log(&format!("failed: {message}"));
             let _ = child.kill();
             Err(message)
         }
         Err(_) => {
+            log("failed: timed out waiting for the ready line");
             let _ = child.kill();
             Err(format!(
                 "The application server did not finish starting within {} minutes.",
