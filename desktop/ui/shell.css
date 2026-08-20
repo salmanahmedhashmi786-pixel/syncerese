@@ -81,3 +81,60 @@ button:disabled { opacity: 0.6; cursor: default; }
   padding-top: 16px;
   border-top: 1px solid var(--bd);
 }
+
+/* --- first-run choice ---------------------------------------------------- */
+
+/* `height: 36px` on the global button rule is what broke this first: a
+   two-line choice overflowed its own box and printed over the next element. */
+.choice {
+  display: block;
+  width: 100%;
+  height: auto;
+  text-align: left;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  background: transparent;
+  border: 1px solid var(--bd);
+  border-radius: 8px;
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.choice:hover,
+.choice:focus-visible {
+  border-color: var(--acc);
+  outline: none;
+}
+
+.choice-title {
+  display: block;
+  font-weight: 600;
+  font-size: 13.5px;
+  margin-bottom: 4px;
+}
+
+.choice-sub {
+  display: block;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--mut);
+  font-weight: 400;
+}
+
+.share {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  margin-top: 18px;
+  cursor: pointer;
+}
+
+.share input[type='checkbox'] {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+  margin: 1px 0 0;
+}

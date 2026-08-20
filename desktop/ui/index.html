@@ -22,9 +22,53 @@
         </svg>
       </div>
       <h1>Syncrèse</h1>
-      <p class="sub">Connect this computer to your workspace.</p>
 
-      <form id="connect" novalidate>
+      <!--
+        FIRST SCREEN: where the data lives.
+        Asked once, on first launch, and remembered. A standalone install and a
+        client of an existing one are different products to the person using
+        them, and guessing wrong in either direction is worse than asking.
+      -->
+      <section id="choose" hidden>
+        <p class="sub">Where should this workspace keep its data?</p>
+
+        <button type="button" class="choice" id="choose-local">
+          <span class="choice-title">On this computer</span>
+          <span class="choice-sub">
+            Everything is stored here and works without an internet connection.
+            Choose this on the first computer.
+          </span>
+        </button>
+
+        <button type="button" class="choice" id="choose-remote">
+          <span class="choice-title">On another computer</span>
+          <span class="choice-sub">
+            Connect to a computer that is already running Syncrèse, on this
+            network or over the internet.
+          </span>
+        </button>
+
+        <label class="share">
+          <input type="checkbox" id="share-lan" />
+          Let other computers on this network use this workspace
+        </label>
+        <p class="hint">
+          Leave this off if only this computer will use Syncrèse. It can be
+          turned on later, and while it is off nothing is reachable from the
+          network at all.
+        </p>
+      </section>
+
+      <!-- Shown while the local server starts. First run applies the database
+           migrations and takes a couple of minutes. -->
+      <section id="starting" hidden>
+        <p class="sub">Starting Syncrèse…</p>
+        <p class="hint" id="starting-detail">Preparing the database.</p>
+      </section>
+
+      <p class="sub" id="connect-sub" hidden>Connect this computer to your workspace.</p>
+
+      <form id="connect" novalidate hidden>
         <label for="origin">WORKSPACE ADDRESS</label>
         <input
           id="origin"

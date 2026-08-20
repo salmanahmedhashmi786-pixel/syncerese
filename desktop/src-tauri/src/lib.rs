@@ -25,6 +25,9 @@
 //! cannot trigger native behaviour. Notifications, the updater and the device
 //! heartbeat all live here, in the shell, not in the web application.
 
+mod server;
+
+use std::process::Child;
 use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
@@ -42,11 +45,24 @@ pub struct Connection {
     /// the app goes, but keeping the value minimal keeps it obviously safe.
     pub origin: String,
     pub device_id: String,
+    /// True when this machine runs the server itself rather than connecting to
+    /// a hosted instance. `serde(default)` so a connection saved by an earlier
+    /// version — which had no such field — still loads instead of being
+    /// silently discarded and forcing the user to pair again.
+    #[serde(default)]
+    pub local: bool,
+    /// Whether the local server accepts connections from other machines.
+    #[serde(default)]
+    pub share_on_lan: bool,
 }
 
 #[derive(Default)]
 struct State {
     connection: Mutex<Option<Connection>>,
+    /// The bundled server, when this machine is the one running it. Held so it
+    /// can be stopped when the application closes — an orphaned Node process
+    /// keeps the database locked, and the next launch fails to open it.
+    server: Mutex<Option<Child>>,
 }
 
 /// Validates a customer-supplied instance URL.
@@ -142,9 +158,20 @@ fn app_version(app: tauri::AppHandle) -> String {
 /// other process running as the same user, and the device id is the thing an
 /// administrator uses to recognise a machine when revoking it.
 #[tauri::command]
-fn save_connection(state: tauri::State<'_, State>, origin: String, device_id: String) -> Result<(), String> {
+fn save_connection(
+    state: tauri::State<'_, State>,
+    origin: String,
+    device_id: String,
+    local: Option<bool>,
+    share_on_lan: Option<bool>,
+) -> Result<(), String> {
     let origin = parse_instance_origin(&origin)?;
-    let connection = Connection { origin, device_id };
+    let connection = Connection {
+        origin,
+        device_id,
+        local: local.unwrap_or(false),
+        share_on_lan: share_on_lan.unwrap_or(false),
+    };
     let json = serde_json::to_string(&connection).map_err(|e| e.to_string())?;
 
     keyring::Entry::new(KEYRING_SERVICE, KEYRING_ACCOUNT)
@@ -177,6 +204,47 @@ fn forget_connection(state: tauri::State<'_, State>) -> Result<(), String> {
     }
     *state.connection.lock().unwrap() = None;
     Ok(())
+}
+
+/// Starts the bundled server on this machine and returns the URL it serves.
+///
+/// Idempotent: if it is already running, the stored origin comes back rather
+/// than a second copy being started. Two servers over one PGlite directory is
+/// the single worst thing that can happen to this data — PGlite is
+/// single-writer, and the second process corrupts the first's store rather than
+/// failing to open it.
+#[tauri::command]
+async fn start_local_server(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, State>,
+    share_on_lan: bool,
+) -> Result<String, String> {
+    {
+        let running = state.server.lock().unwrap();
+        if running.is_some() {
+            if let Some(existing) = state.connection.lock().unwrap().as_ref() {
+                return Ok(existing.origin.clone());
+            }
+        }
+    }
+
+    let (child, url) = server::start(&app, share_on_lan)?;
+    let origin = parse_instance_origin(&url)?;
+
+    *state.server.lock().unwrap() = Some(child);
+    Ok(origin)
+}
+
+/// Stops the bundled server, if this machine is running one.
+///
+/// Called when the application closes. An orphaned Node process keeps the
+/// database directory locked, and the next launch cannot open it — a failure
+/// that looks like corruption and is not.
+fn stop_local_server(state: &State) {
+    if let Some(mut child) = state.server.lock().unwrap().take() {
+        let _ = child.kill();
+        let _ = child.wait();
+    }
 }
 
 /// Opens the customer's instance in a second window.
@@ -235,9 +303,23 @@ pub fn run() {
             load_connection,
             forget_connection,
             open_instance,
+            start_local_server,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running Syncrese");
+        .build(tauri::generate_context!())
+        .expect("error while building Syncrese")
+        .run(|app, event| {
+            // Stop the bundled server when the application exits.
+            //
+            // Without this the Node process outlives the window, keeps the
+            // PGlite directory locked, and the next launch cannot open its own
+            // database — a failure that reads as corruption and is not. It is
+            // also how a user ends up with two servers over one data directory,
+            // which for a single-writer store is the worst thing that can
+            // happen to it.
+            if let tauri::RunEvent::Exit = event {
+                stop_local_server(&app.state::<State>());
+            }
+        });
 }
 
 #[cfg(test)]

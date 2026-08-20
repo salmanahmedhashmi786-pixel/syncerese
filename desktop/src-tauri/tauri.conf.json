@@ -50,6 +50,9 @@
     },
     "macOS": {
       "minimumSystemVersion": "10.15"
+    },
+    "resources": {
+      "../sidecar/": "sidecar/"
     }
   }
 }

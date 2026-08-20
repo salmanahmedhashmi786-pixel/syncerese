@@ -20,6 +20,10 @@
 const { invoke } = window.__TAURI__.core
 
 const form = document.querySelector('#connect')
+const chooseSection = document.querySelector('#choose')
+const startingSection = document.querySelector('#starting')
+const startingDetail = document.querySelector('#starting-detail')
+const connectSub = document.querySelector('#connect-sub')
 const originField = document.querySelector('#origin')
 const codeField = document.querySelector('#code')
 const submit = document.querySelector('#submit')
@@ -35,6 +39,66 @@ codeField.addEventListener('input', () => {
   const raw = codeField.value.toUpperCase().replace(/[^0-9A-Z]/g, '').slice(0, 8)
   codeField.value = raw.length > 4 ? `${raw.slice(0, 4)}-${raw.slice(4)}` : raw
 })
+
+/** Only one section is ever visible; there is no navigation to get lost in. */
+function show(section) {
+  for (const el of [chooseSection, startingSection, form]) el.hidden = el !== section
+  connectSub.hidden = section !== form
+  showError('')
+}
+
+/**
+ * Starts the server on this machine and opens the workspace.
+ *
+ * First run applies twenty-five migrations into an empty database and takes a
+ * couple of minutes, so the progress lines the server prints are shown as they
+ * arrive. A motionless screen for two minutes is indistinguishable from a hang,
+ * and the support call that follows is expensive.
+ */
+async function startHere(shareOnLan) {
+  show(startingSection)
+
+  // Progress is a nicety; starting the server is not. If the event API is not
+  // available for any reason, the screen simply stays on its opening message
+  // rather than the whole flow dying before it begins — which is what happened
+  // the first time this ran, and looked exactly like a dead button.
+  let stop = () => {}
+  try {
+    const stopListening = await window.__TAURI__.event.listen('server-progress', (event) => {
+      const line = String(event.payload ?? '')
+      if (line.includes('preparing the database')) {
+        startingDetail.textContent =
+          'Preparing the database. This happens once and takes a minute or two.'
+      } else if (line.includes('issued a certificate')) {
+        startingDetail.textContent = 'Securing the connection.'
+      } else if (line.includes('applied migration')) {
+        startingDetail.textContent = 'Setting up the database.'
+      }
+    })
+    stop = stopListening
+  } catch {
+    /* no progress updates; the server still starts */
+  }
+
+  try {
+    const origin = await invoke('start_local_server', { shareOnLan })
+    // Saved as a connection so the next launch skips this screen entirely.
+    // device_id is "local": nothing pairs with itself, and the field is what an
+    // administrator would use to revoke a remote machine.
+    await invoke('save_connection', {
+      origin,
+      deviceId: 'local',
+      local: true,
+      shareOnLan,
+    })
+    await invoke('open_instance', { origin })
+  } catch (err) {
+    show(chooseSection)
+    showError(typeof err === 'string' ? err : 'Could not start Syncrèse on this computer.')
+  } finally {
+    stop()
+  }
+}
 
 /** Already paired? Go straight through, and re-check that we are still allowed. */
 async function resume() {
@@ -59,6 +123,10 @@ async function resume() {
       // whole point of revocation, and it must not be skippable by staying
       // offline for ever.
       await invoke('forget_connection')
+      // The form has to be visible before the message lands on it — `boot`
+      // starts with everything hidden, and an error written to a hidden section
+      // is an empty window.
+      show(form)
       showError('This computer was removed from the workspace. Pair it again to continue.')
       originField.value = saved.origin
       return false
@@ -175,6 +243,46 @@ function describeAddressProblem(input) {
   return null
 }
 
-resume().then((resumed) => {
-  if (!resumed) originField.focus()
+document.querySelector('#choose-local').addEventListener('click', () => {
+  startHere(document.querySelector('#share-lan').checked)
+})
+
+document.querySelector('#choose-remote').addEventListener('click', () => {
+  show(form)
+  originField.focus()
+})
+
+/**
+ * Decides which screen opens, and starts the local server when this machine is
+ * the one that holds the data.
+ *
+ * A local install is resumed WITHOUT asking anything: the server has to be
+ * running before the window can show a workspace, and there is nobody else to
+ * start it. A remote connection goes through `resume`, which also re-checks
+ * that this machine has not been revoked.
+ */
+async function boot() {
+  const saved = await invoke('load_connection')
+
+  if (saved?.local) {
+    await startHere(Boolean(saved.share_on_lan))
+    return
+  }
+
+  if (saved) {
+    const resumed = await resume()
+    if (resumed) return
+    // Pairing was revoked or the address changed. Fall through to the form
+    // rather than the choice screen: this machine has already decided it is a
+    // client, and asking again would be asking a question already answered.
+    show(form)
+    originField.focus()
+    return
+  }
+
+  show(chooseSection)
+}
+
+boot().catch(() => {
+  show(chooseSection)
 })
