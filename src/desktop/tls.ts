@@ -216,6 +216,21 @@ export function fingerprintOf(pemText: string): string {
  *
  * Returns whether it worked. The caller carries on regardless: a certificate
  * warning is a bad experience and refusing to start is a worse one.
+ *
+ * ON REVOCATION, because this looks broken before it is understood.
+ *
+ * A local CA publishes no revocation list — there is nowhere to publish one, and
+ * nothing to revoke. Windows' chain engine notices, and STRICT clients treat the
+ * inconclusive check as fatal: curl's schannel backend refuses outright with
+ * CERT_TRUST_REVOCATION_STATUS_UNKNOWN, which reads like a broken certificate
+ * and is not one.
+ *
+ * Browsers do not. Verified in a real engine against this exact certificate:
+ * the page loads with no warning and reports isSecureContext true, so the
+ * connection is trusted rather than excused. That is what matters, because a
+ * browser engine is what renders this application.
+ *
+ * If you are testing with curl, pass --ssl-no-revoke. Nothing is wrong.
  */
 export function trustCaLocally(): boolean {
   if (process.platform !== 'win32') return false
