@@ -52,6 +52,36 @@ pub fn log(line: &str) {
     println!("{line}");
 }
 
+/// Removes the extended-length prefix Windows calls a "verbatim" path.
+///
+/// `resource_dir()` returns one. Rust is perfectly happy with it — the paths
+/// exist, the spawn succeeds — but Node is not. Handed such a path as its main
+/// script it dies inside `resolveMainPath` with
+/// `EISDIR: illegal operation on a directory, lstat 'D:'`, an error naming a
+/// drive letter and suggesting nothing whatever about path prefixes.
+///
+/// The child then exits before printing anything, so from the application's
+/// side the server simply never starts and the window waits for a ready line
+/// that will not come.
+///
+/// This only happens in a packaged install. Running the same sidecar by hand
+/// uses an ordinary path and works perfectly, which is exactly why it survived
+/// every test until there was an installer to test.
+fn strip_verbatim(path: PathBuf) -> PathBuf {
+    let text = path.to_string_lossy().to_string();
+    if let Some(rest) = text.strip_prefix(VERBATIM_UNC) {
+        // A network share: \\?\UNC\server\share becomes \\server\share.
+        return PathBuf::from(format!(r"\\{rest}"));
+    }
+    if let Some(rest) = text.strip_prefix(VERBATIM) {
+        return PathBuf::from(rest);
+    }
+    path
+}
+
+const VERBATIM: &str = r"\\?\";
+const VERBATIM_UNC: &str = r"\\?\UNC\";
+
 /// Generous, because the first run is genuinely slow and the failure mode of
 /// being too eager is worse: the user is told it did not start, while it is
 /// still working, and starts it again on top of itself.
@@ -63,11 +93,12 @@ const READY_TIMEOUT: Duration = Duration::from_secs(900);
 /// means the listener binds loopback and is not merely firewalled but absent
 /// from the network, which is the right default for a single-user install.
 pub fn start(app: &AppHandle, share_on_lan: bool) -> Result<(Child, String), String> {
-    let sidecar = app
-        .path()
-        .resource_dir()
-        .map_err(|e| format!("Could not locate the application files: {e}"))?
-        .join("sidecar");
+    let sidecar = strip_verbatim(
+        app.path()
+            .resource_dir()
+            .map_err(|e| format!("Could not locate the application files: {e}"))?,
+    )
+    .join("sidecar");
 
     let node = sidecar.join(if cfg!(windows) { "node.exe" } else { "node" });
     let launcher = sidecar.join("launcher.mjs");
