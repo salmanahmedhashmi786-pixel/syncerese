@@ -66,7 +66,12 @@ export async function getLocalDb(): Promise<AnyDb> {
     return cache.__syncreseLocalDb.instance
   }
 
-  const client = new PGlite(path.resolve(process.cwd(), '.syncrese-dev'))
+  // In desktop mode the database belongs to the customer and lives in their
+  // application data directory, not in whatever folder the process happened to
+  // start in. Development keeps `.syncrese-dev` beside the repository.
+  const { isDesktop, databaseDir } = await import('@/desktop/mode')
+  const location = isDesktop() ? databaseDir() : path.resolve(process.cwd(), '.syncrese-dev')
+  const client = new PGlite(location)
   const instance = drizzle(client, { schema }) as unknown as AnyDb
 
   const ready = (async () => {

@@ -62,6 +62,17 @@ export type CheckOptions = {
 export function checkEnvironment(options: CheckOptions = {}): Finding[] {
   const env = options.env ?? process.env
   const production = options.production ?? env.NODE_ENV === 'production'
+  /**
+   * Standalone desktop install: no server, no DNS, no certificate authority.
+   *
+   * Two checks below would otherwise refuse to start it, and both are right
+   * about the hosted deployment and wrong about this one. The exemptions are
+   * keyed on SYNCRESE_DESKTOP, which the desktop server entry point sets and
+   * nothing else does — a hosted deployment that somehow set it would still
+   * need DATABASE_URL absent to reach the embedded database, so the blast
+   * radius of getting this wrong is a loud failure rather than a quiet one.
+   */
+  const desktop = env.SYNCRESE_DESKTOP === '1'
   const out: Finding[] = []
 
   const error = (variable: string, message: string) =>
@@ -86,9 +97,10 @@ export function checkEnvironment(options: CheckOptions = {}): Finding[] {
 
   // --- Database ------------------------------------------------------------
 
-  const dbUrl = production
-    ? required('DATABASE_URL', 'The embedded development database is never used in production.')
-    : value('DATABASE_URL')
+  const dbUrl =
+    production && !desktop
+      ? required('DATABASE_URL', 'The embedded development database is never used in production.')
+      : value('DATABASE_URL')
 
   if (dbUrl) {
     const user = usernameOf(dbUrl)
@@ -148,9 +160,15 @@ export function checkEnvironment(options: CheckOptions = {}): Finding[] {
 
     const url = required('AUTH_URL', 'OAuth callbacks and session cookies are built from it.')
     if (url && !url.startsWith('https://')) {
+      // Still https on the desktop — the local server generates its own
+      // certificate at first run precisely so this check does not have to be
+      // weakened. A desktop install serving plain http is a bug, not a mode.
       error(
         'AUTH_URL',
-        'is not https. Session cookies would be sent in the clear over any plain-http hop.',
+        desktop
+          ? 'is not https. The desktop server issues its own certificate; plain http would put ' +
+            'session cookies on the office network in the clear.'
+          : 'is not https. Session cookies would be sent in the clear over any plain-http hop.',
       )
     }
   }

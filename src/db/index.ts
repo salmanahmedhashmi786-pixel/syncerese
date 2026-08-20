@@ -23,9 +23,16 @@ export async function db(): Promise<AnyDb> {
   const url = process.env.DATABASE_URL
 
   if (!url) {
-    // No connection string. In development, fall back to the embedded PGlite
-    // database so the app runs with zero setup.
-    if (process.env.NODE_ENV === 'production') {
+    // DESKTOP MODE runs the embedded database in production on purpose: there is
+    // no server to connect to, and PGlite is real PostgreSQL 16 running the same
+    // migrations, policies and triggers as the hosted deployment. This is the
+    // one case where "production" and "no DATABASE_URL" are both true and
+    // correct.
+    const { isDesktop } = await import('@/desktop/mode')
+
+    // No connection string, and not desktop. In development, fall back to the
+    // embedded PGlite database so the app runs with zero setup.
+    if (process.env.NODE_ENV === 'production' && !isDesktop()) {
       throw new Error(
         'DATABASE_URL is not set. The embedded development database is never used in production.',
       )
