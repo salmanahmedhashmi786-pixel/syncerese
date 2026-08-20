@@ -71,3 +71,8 @@ desktop/node_modules/
 # push. Ship them from a GitHub Release instead; `npm run build` in desktop/
 # reproduces them.
 dist/
+
+# Assembled by scripts/build-desktop.mjs: the Node runtime, the Next standalone
+# build and the migrations, ~169 MB. Entirely reproducible from source, and git
+# history is permanent — see the note on dist/ above.
+desktop/sidecar/

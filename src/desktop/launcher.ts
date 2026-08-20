@@ -64,13 +64,40 @@ function waitForNext(timeoutMs = 600_000): Promise<void> {
   const deadline = Date.now() + timeoutMs
   const startedAt = Date.now()
   let announced = 0
+  // Without this the polling chain carries on after resolve, and keeps
+  // announcing progress for a database that is already up.
+  let settled = false
   return new Promise((resolve, reject) => {
     const attempt = () => {
       const req = httpRequest(
-        { host: '127.0.0.1', port: INTERNAL_PORT, path: '/api/health', timeout: 2_000 },
+        {
+          host: '127.0.0.1',
+          port: INTERNAL_PORT,
+          path: '/api/health',
+          timeout: 5_000,
+          // The detailed answer, which the endpoint gives only to the cron
+          // secret. The plain one reports `ok` as soon as HTTP is up — before
+          // the database exists — and the window would open onto an
+          // application still applying migrations.
+          headers: { authorization: `Bearer ${process.env.CRON_SECRET ?? ''}` },
+        },
         (res) => {
-          res.resume()
-          resolve()
+          let body = ''
+          res.setEncoding('utf8')
+          res.on('data', (d) => (body += d))
+          res.on('end', () => {
+            try {
+              const parsed = JSON.parse(body) as { status?: string; database?: string }
+              if (parsed.status === 'ok' && parsed.database === 'ok') {
+                settled = true
+                resolve()
+                return
+              }
+            } catch {
+              /* not JSON yet */
+            }
+            retry()
+          })
         },
       )
       req.on('error', retry)
@@ -81,6 +108,7 @@ function waitForNext(timeoutMs = 600_000): Promise<void> {
       req.end()
     }
     const retry = () => {
+      if (settled) return
       if (Date.now() > deadline) {
         reject(new Error(`The application server did not start within ${timeoutMs / 1000}s.`))
         return
@@ -166,11 +194,34 @@ async function main(): Promise<void> {
         upstream.pipe(res)
       },
     )
-    forward.on('error', () => {
+    forward.on('error', (err: NodeJS.ErrnoException) => {
+      // Logged, not just returned. A 502 that says only "not responding" is the
+      // same unhelpful shape as the pairing screen's "could not reach that
+      // address" — true, and impossible to act on.
+      console.error(`[syncrese] proxy -> 127.0.0.1:${INTERNAL_PORT} failed: ${err.code ?? ''} ${err.message}`)
       if (!res.headersSent) res.writeHead(502, { 'content-type': 'text/plain' })
       res.end('The application server is not responding.')
     })
     req.pipe(forward)
+  })
+
+  // A port already in use is the one startup failure a customer can actually
+  // act on, and Node's default for it is an unhandled EADDRINUSE with a stack
+  // trace. Say which port, and how to change it.
+  proxy.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(
+        `[syncrese] port ${PUBLIC_PORT} is already in use on this computer.
+` +
+          `Another program has it — possibly a second copy of Syncrèse that is still ` +
+          `running.
+Close that, or set SYNCRESE_PORT to a different number and start again.`,
+      )
+    } else {
+      console.error(`[syncrese] could not listen on port ${PUBLIC_PORT}: ${err.message}`)
+    }
+    child.kill()
+    process.exit(1)
   })
 
   proxy.listen(PUBLIC_PORT, shareOnLan ? '0.0.0.0' : '127.0.0.1', () => {
