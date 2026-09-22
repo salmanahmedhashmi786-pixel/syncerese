@@ -5,6 +5,7 @@ import { existsSync } from 'node:fs'
 import path from 'node:path'
 import { applyDesktopEnv, dataDir } from './mode'
 import { ensureCertificate, trustCaLocally } from './tls'
+import { runScheduledBackupWork } from './backup'
 
 /**
  * The desktop server.
@@ -137,6 +138,31 @@ async function main(): Promise<void> {
   // Secrets first: the boot gate reads them, and on a fresh install they do not
   // exist yet.
   applyDesktopEnv()
+
+  // Backup and restore both happen HERE, before Next opens the database
+  // directory at all — the one moment nothing else has it open. See the note
+  // at the top of desktop/backup.ts for why neither ever runs while the app
+  // itself is live.
+  try {
+    const work = runScheduledBackupWork()
+    if (work.restored) console.log(`[syncrese] restored from ${work.restored}`)
+    if (work.backedUp) {
+      console.log(
+        `[syncrese] backed up (${(work.backedUp.bytes / 1024 / 1024).toFixed(1)} MB) to ${work.backedUp.file}`,
+      )
+    }
+  } catch (err) {
+    // A failed backup must not be a failure to start — that would turn "we
+    // could not protect your data" into "we also would not let you use it".
+    // A failed RESTORE is worse to swallow, since the customer asked for it
+    // specifically and deserves to know it did not happen, but it still must
+    // not brick the app: the pre-restore database is untouched either way,
+    // because restoreBackup() only removes the live directory after the new
+    // one is validated.
+    console.error(
+      `[syncrese] backup/restore step failed: ${err instanceof Error ? err.message : String(err)}`,
+    )
+  }
 
   const cert = ensureCertificate()
   const trusted = trustCaLocally()

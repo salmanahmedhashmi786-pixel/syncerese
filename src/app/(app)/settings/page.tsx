@@ -20,6 +20,7 @@ import { WorkflowPanel, type WorkflowRuleRow } from './WorkflowPanel'
 import { IntegrationsPanel } from './IntegrationsPanel'
 import { RetentionPanel } from './RetentionPanel'
 import { DevicesPanel } from './DevicesPanel'
+import { BackupPanel } from './BackupPanel'
 import { listIntegrations, type ChatIntegrationSummary } from '@/integrations/chat'
 
 export const metadata = { title: 'Settings' }
@@ -153,6 +154,10 @@ export default async function SettingsPage() {
       {can(ctx, 'license.read') && (
         <DevicesPanel canManage={can(ctx, 'license.manage')} />
       )}
+
+      {/* Renders nothing on the hosted deployment — it asks the server and
+          hides itself, rather than this page needing to know isDesktop(). */}
+      {can(ctx, 'license.read') && <BackupPanel canManage={can(ctx, 'license.manage')} />}
 
       <PrivacyPanel canManage={can(ctx, 'gdpr.manage')} />
 

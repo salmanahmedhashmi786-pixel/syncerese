@@ -53,6 +53,86 @@ const STAMP = () => new Date().toISOString().replace(/[:.]/g, '-')
 const KEEP = 14
 
 /**
+ * WHY EVERY FUNCTION HERE ASSUMES THE SERVER IS NOT RUNNING.
+ *
+ * `takeBackup` is a raw filesystem copy of PGlite's data directory. Real
+ * Postgres can be backed up this way while live, safely, because its WAL gives
+ * a copy taken mid-write the same consistency guarantee as recovering from a
+ * power cut. PGlite is "real Postgres compiled to WASM", which makes that
+ * plausible here too — but this codebase has no way to confirm PGlite's Node
+ * filesystem backend actually preserves that property, and the thing at stake
+ * is a business's only copy of its accounting records.
+ *
+ * So neither backup nor restore ever runs while the app itself is the process
+ * serving requests against that directory. Both are driven from the launcher,
+ * before Next starts — the same moment migrations already run in, for the same
+ * reason: it is the one point where nothing else has the directory open yet.
+ *
+ * The cost is real and worth stating: "back up now" in the Settings panel does
+ * not back up now. It queues one for the next launch. Slower than it could be,
+ * never wrong.
+ */
+
+const REQUEST_FILE = 'backup-requested'
+const RESTORE_FILE = 'restore-requested'
+const DUE_AFTER_MS = 24 * 60 * 60 * 1000
+
+/** Called from the Settings panel. Queues a backup for the next launch rather
+ *  than taking one inline, for the reason above. */
+export function requestBackup(): void {
+  mkdirSync(dataDir(), { recursive: true })
+  writeFileSync(path.join(dataDir(), REQUEST_FILE), new Date().toISOString())
+}
+
+/** Called from the Settings panel. Queues a restore FROM the given backup
+ *  folder for the next launch — never performed inline, for the same reason. */
+export function requestRestore(from: string): void {
+  if (!existsSync(path.join(from, 'backup.json'))) {
+    throw new Error(`${from} does not look like a backup — no backup.json in it.`)
+  }
+  mkdirSync(dataDir(), { recursive: true })
+  writeFileSync(path.join(dataDir(), RESTORE_FILE), from)
+}
+
+/**
+ * Called once from the launcher, before Next starts. Applies a queued restore
+ * if one is waiting, then takes a backup if one is either queued or overdue.
+ * Returns what it did, so the launcher can log something a support call can
+ * ask the customer to read out.
+ */
+export function runScheduledBackupWork(): { restored: string | null; backedUp: BackupSummary | null } {
+  let restored: string | null = null
+  const restoreMarker = path.join(dataDir(), RESTORE_FILE)
+  if (existsSync(restoreMarker)) {
+    const from = readFileSync(restoreMarker, 'utf8').trim()
+    rmSync(restoreMarker, { force: true })
+    if (from && existsSync(from)) {
+      restoreBackup(from)
+      restored = from
+    }
+  }
+
+  const requestMarker = path.join(dataDir(), REQUEST_FILE)
+  const requested = existsSync(requestMarker)
+  if (requested) rmSync(requestMarker, { force: true })
+
+  const due = requested || isBackupDue()
+  const backedUp = due && existsSync(databaseDir()) ? takeBackup() : null
+
+  return { restored, backedUp }
+}
+
+/** No backup at all, or the newest one is more than a day old. Checked rather
+ *  than scheduled with a timer: the process this runs in does not stay alive
+ *  between launches, so "once per launch, if due" is what "daily" actually
+ *  means for software that is not always running. */
+export function isBackupDue(): boolean {
+  const latest = listBackups()[0]
+  if (!latest) return true
+  return Date.now() - new Date(latest.takenAt).getTime() > DUE_AFTER_MS
+}
+
+/**
  * Copies the database and secrets into a dated folder under `backups/`.
  *
  * A directory copy rather than a zip: PGlite's data directory is small, Node
