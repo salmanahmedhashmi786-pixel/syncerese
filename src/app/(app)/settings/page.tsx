@@ -21,6 +21,7 @@ import { IntegrationsPanel } from './IntegrationsPanel'
 import { RetentionPanel } from './RetentionPanel'
 import { DevicesPanel } from './DevicesPanel'
 import { BackupPanel } from './BackupPanel'
+import { NetworkPanel } from './NetworkPanel'
 import { listIntegrations, type ChatIntegrationSummary } from '@/integrations/chat'
 
 export const metadata = { title: 'Settings' }
@@ -158,6 +159,8 @@ export default async function SettingsPage() {
       {/* Renders nothing on the hosted deployment — it asks the server and
           hides itself, rather than this page needing to know isDesktop(). */}
       {can(ctx, 'license.read') && <BackupPanel canManage={can(ctx, 'license.manage')} />}
+
+      {can(ctx, 'license.read') && <NetworkPanel canManage={can(ctx, 'license.manage')} />}
 
       <PrivacyPanel canManage={can(ctx, 'gdpr.manage')} />
 
