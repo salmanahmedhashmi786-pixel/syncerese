@@ -1,4 +1,16 @@
+
+
 # dependencies
+   node_modules/
+   .env
+   .env.*
+   *.log
+   dist/
+   build/
+   __pycache__/
+   venv/
+   .venv/
+
 node_modules/
 .pnp
 .pnp.js
