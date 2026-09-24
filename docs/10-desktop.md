@@ -168,6 +168,23 @@ customer-typed value decides what the application loads:
 cd desktop/src-tauri && cargo test
 ```
 
+**On the GNU path, `cargo test` may crash the test binary itself with
+`STATUS_ENTRYPOINT_NOT_FOUND`, while `cargo check` and `cargo build --bin
+syncrese-desktop` both succeed and the resulting exe opens normally.** This is
+the GNU linker's resource-manifest merge (`ld: .rsrc merge failure: multiple
+non-default manifests` — a warning, not the fatal error) landing differently
+on `cargo test`'s special test-harness binary than on the real one. It is not
+a sign the application is broken: build the bin and run it if `cargo test`
+does this, rather than trusting the test binary's crash over a window that
+actually opens.
+
+Also on the GNU path: `[lib] crate-type` deliberately excludes `cdylib`. It is
+in Tauri's template for Android's JNI shared library, which this project never
+generates (no `gen/android`), and past a certain dependency-tree size —
+crossed when `tauri-plugin-dialog` was added — GNU `ld` refuses to link it at
+all (`export ordinal too large`). Nothing here ships a `cdylib`, so there is
+nothing to lose by leaving it out.
+
 Cross-compiling is not worth attempting. Build each platform on that platform, in CI.
 
 ---

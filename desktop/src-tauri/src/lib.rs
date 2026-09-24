@@ -33,6 +33,7 @@ use std::sync::Mutex;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 
 const KEYRING_SERVICE: &str = "com.syncrese.desktop";
 const KEYRING_ACCOUNT: &str = "connection";
@@ -253,7 +254,11 @@ fn stop_local_server(state: &State) {
 /// what leaves it without IPC — see the module comment. If a future change adds
 /// `instance` to a capability, everything above stops being true.
 #[tauri::command]
-async fn open_instance(app: tauri::AppHandle, origin: String) -> Result<(), String> {
+async fn open_instance(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, State>,
+    origin: String,
+) -> Result<(), String> {
     let origin = parse_instance_origin(&origin)?;
     let url = url::Url::parse(&origin).map_err(|e| e.to_string())?;
 
@@ -261,12 +266,57 @@ async fn open_instance(app: tauri::AppHandle, origin: String) -> Result<(), Stri
         return Ok(());
     }
 
-    WebviewWindowBuilder::new(&app, "instance", WebviewUrl::External(url))
+    // Whether closing this window would cut off other computers, decided once
+    // here rather than read again inside the event handler below — the
+    // handler fires on the main thread and must not block it waiting on a
+    // mutex a slower path might be holding.
+    let sharing = state
+        .connection
+        .lock()
+        .unwrap()
+        .as_ref()
+        .is_some_and(|c| c.local && c.share_on_lan);
+
+    let window = WebviewWindowBuilder::new(&app, "instance", WebviewUrl::External(url))
         .title("Syncrèse")
         .inner_size(1440.0, 900.0)
         .min_inner_size(900.0, 600.0)
         .build()
         .map_err(|e| format!("Could not open the workspace: {e}"))?;
+
+    // Closing this window when this machine is sharing on the LAN does not
+    // merely close a window — it kills the server everyone else on the
+    // network is using. A tray-resident mode would let the office keep
+    // working while this person's screen goes elsewhere; this is the smaller
+    // fix that ships today: ask first, so the disconnection is a decision
+    // rather than an accident.
+    if sharing {
+        let app_for_close = app.clone();
+        window.on_window_event(move |event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                let dialog_app = app_for_close.clone();
+                app_for_close
+                    .dialog()
+                    .message(
+                        "This computer is sharing Syncrèse with your network. Closing it will \
+                         disconnect everyone using it right now, mid-work.",
+                    )
+                    .title("Quit Syncrèse?")
+                    .kind(MessageDialogKind::Warning)
+                    .buttons(MessageDialogButtons::OkCancelCustom(
+                        "Quit anyway".into(),
+                        "Keep sharing".into(),
+                    ))
+                    .show(move |confirmed| {
+                        if confirmed {
+                            stop_local_server(&dialog_app.state::<State>());
+                            dialog_app.exit(0);
+                        }
+                    });
+            }
+        });
+    }
 
     if let Some(shell) = app.get_webview_window("shell") {
         let _ = shell.hide();
@@ -278,6 +328,7 @@ async fn open_instance(app: tauri::AppHandle, origin: String) -> Result<(), Stri
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         // NO AUTO-UPDATER, deliberately. It was configured against
         // `https://releases.syncrese.example` with the literal public key
         // `REPLACE_WITH_TAURI_SIGNER_PUBLIC_KEY` — a fake host and a key that is
