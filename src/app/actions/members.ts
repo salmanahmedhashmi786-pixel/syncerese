@@ -7,13 +7,16 @@ import { db } from '@/db'
 import { withTenant } from '@/db/tenant'
 import { getSession } from '@/server/session'
 import { sendEmail } from '@/email/send'
-import { invitationEmail } from '@/email/templates'
+import { invitationEmail, passwordResetEmail } from '@/email/templates'
+import { TOKEN_TTL_MINUTES } from '@/auth/password-reset'
 import { AppError } from '@/lib/errors'
 import {
   acceptInvitation,
+  adminResetPassword,
   changeRole,
   inviteMember,
   invitationUrl,
+  resetPasswordUrl,
   revokeInvitation,
   setMemberActive,
 } from '@/server/members'
@@ -116,6 +119,39 @@ export async function setMemberActiveAction(
   const { ctx } = await getSession()
   if (!ctx) return { ok: false, error: 'Sign in to continue.' }
   return tenant((tx) => setMemberActive(tx, ctx, membershipId, active))
+}
+
+/**
+ * Resets a member's password and returns the link, whether or not the email
+ * actually went out — same reasoning as inviteMemberAction: a send that
+ * failed silently, behind a panel implying it is on its way, is worse than no
+ * email at all.
+ */
+export async function adminResetPasswordAction(
+  membershipId: string,
+): Promise<Result<{ email: string; url: string; expiresAt: string; emailed: boolean }>> {
+  const { ctx } = await getSession()
+  if (!ctx) return { ok: false, error: 'Sign in to continue.' }
+
+  try {
+    const handle = await db()
+    const issued = await withTenant(
+      handle,
+      { organizationId: ctx.organizationId, userId: ctx.userId, requestId: ctx.requestId },
+      (tx) => adminResetPassword(tx, ctx, membershipId),
+    )
+    revalidatePath('/settings')
+
+    const url = resetPasswordUrl(await origin(), issued.token)
+    const delivery = await sendEmail(passwordResetEmail(issued.email, url, TOKEN_TTL_MINUTES))
+
+    return {
+      ok: true,
+      data: { email: issued.email, url, expiresAt: issued.expiresAt, emailed: delivery.sent },
+    }
+  } catch (err) {
+    return fail(err)
+  }
 }
 
 /**

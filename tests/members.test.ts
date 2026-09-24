@@ -5,14 +5,17 @@ import { withTenant, type TenantTx } from '@/db/tenant'
 import { resolveContext, type RequestContext } from '@/server/context'
 import {
   acceptInvitation,
+  adminResetPassword,
   changeRole,
   inviteMember,
   invitationUrl,
   listMembers,
+  resetPasswordUrl,
   resolveInvitation,
   revokeInvitation,
   setMemberActive,
 } from '@/server/members'
+import { completeReset } from '@/auth/password-reset'
 import { createTestDb, roleId, seedOrg, seedUser, type TestDb } from './helpers/db'
 
 /**
@@ -567,6 +570,57 @@ describe('members and invitations', () => {
     expect(ok.created).toBe(true)
   })
 
+  // -------------------------------------------------------------------------
+  // Admin-issued password resets — the offline install's substitute for
+  // /forgot-password, which needs a mail server this deployment may not have.
+  // -------------------------------------------------------------------------
+
+  it('issues a reset link that actually sets a new password', async () => {
+    const view = await asOwner((tx) => listMembers(tx, ownerCtx))
+    const target = view.members.find((m) => m.status === 'active' && !m.isSelf)!
+
+    const issued = await asOwner((tx) => adminResetPassword(tx, ownerCtx, target.membershipId))
+    expect(issued.email).toBe(target.email)
+    expect(issued.token.length).toBeGreaterThan(20)
+
+    // Stored hashed in the same table the self-service flow uses — this is
+    // what lets completeReset() accept either kind of token unmodified.
+    const stored = await t.client.query<{ n: string }>(
+      `select count(*) as n from password_reset_tokens`,
+    )
+    expect(Number(stored.rows[0]!.n)).toBeGreaterThan(0)
+
+    const result = await completeReset(t.db, issued.token, 'a-new-correct-horse')
+    expect(result.ok).toBe(true)
+
+    // And it actually changed something real: the old outcome of this test
+    // would have been indistinguishable from a token that silently did
+    // nothing.
+    const ctx = await resolveContext(t.db, { userId: target.userId, organizationId: org.orgId })
+    expect(ctx).not.toBeNull()
+  })
+
+  it('will not let an admin reset an owner’s password', async () => {
+    const adminUserId = await seedUser(t, 'reset-admin@nordsee.example')
+    const adminRole = await roleId(t.client, 'admin')
+    await t.sudo(
+      `insert into memberships (id, organization_id, user_id, role_id, status)
+       values (gen_random_uuid(), '${org.orgId}', '${adminUserId}', '${adminRole}', 'active')`,
+    )
+    const adminCtx = (await resolveContext(t.db, {
+      userId: adminUserId,
+      organizationId: org.orgId,
+    }))!
+
+    await withTenant(t.db, { organizationId: org.orgId, userId: adminUserId }, async (tx) => {
+      const view = await listMembers(tx, adminCtx)
+      const owner = view.members.find((m) => m.roleKey === 'owner')!
+      await expect(adminResetPassword(tx, adminCtx, owner.membershipId)).rejects.toMatchObject({
+        code: 'FORBIDDEN',
+      })
+    })
+  })
+
   it('records every membership change in the audit trail', async () => {
     const res = await t.client.query<{ action: string }>(
       `select distinct action from audit_log where organization_id = $1 and action like 'member.%'`,
@@ -576,6 +630,7 @@ describe('members and invitations', () => {
     expect(actions).toContain('member.invited')
     expect(actions).toContain('member.joined')
     expect(actions).toContain('member.role_changed')
+    expect(actions).toContain('member.password_reset_issued')
     expect(actions).toContain('member.deactivated')
   })
 
@@ -606,5 +661,16 @@ describe('invitation links', () => {
     // base64url tokens contain no reserved characters, but the function must
     // not depend on that — it is handed whatever generateToken produces.
     expect(invitationUrl('https://x.test', 'a+b/c=')).toBe('https://x.test/invite/a%2Bb%2Fc%3D')
+  })
+})
+
+describe('admin reset-password links', () => {
+  it('points at the same /reset-password route the self-service flow uses', () => {
+    expect(resetPasswordUrl('https://erp.example.com', 'abc123')).toBe(
+      'https://erp.example.com/reset-password?token=abc123',
+    )
+    expect(resetPasswordUrl('https://erp.example.com/', 'abc123')).toBe(
+      'https://erp.example.com/reset-password?token=abc123',
+    )
   })
 })

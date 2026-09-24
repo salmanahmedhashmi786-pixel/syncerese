@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/primitives'
 import { useToast } from '@/components/shell/Toaster'
 import {
+  adminResetPasswordAction,
   changeRoleAction,
   inviteMemberAction,
   revokeInvitationAction,
@@ -74,6 +75,9 @@ export function MembersPanel({
   } | null>(
     null,
   )
+  const [resetIssued, setResetIssued] = useState<
+    { membershipId: string; email: string; url: string; expiresAt: string; emailed: boolean } | null
+  >(null)
 
   const full = seats.used >= seats.licensed
 
@@ -102,6 +106,16 @@ export function MembersPanel({
         router.refresh()
       } else {
         toast(result.error ?? 'Something went wrong.', 'err')
+      }
+    })
+
+  const resetPassword = (membershipId: string) =>
+    startTransition(async () => {
+      const result = await adminResetPasswordAction(membershipId)
+      if (result.ok && result.data) {
+        setResetIssued({ membershipId, ...result.data })
+      } else if (!result.ok) {
+        toast(result.error, 'err')
       }
     })
 
@@ -174,72 +188,94 @@ export function MembersPanel({
         <div style={{ ...labelStyle, marginBottom: 8 }}>MEMBERS ({members.length})</div>
 
         {members.map((m) => (
-          <div
-            key={m.membershipId}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: '9px 0',
-              borderBottom: '1px solid var(--bd)',
-              opacity: m.status === 'deactivated' ? 0.55 : 1,
-            }}
-          >
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12.5, fontWeight: 500 }}>
-                {m.name || m.email}
-                {m.isSelf && <span style={{ color: 'var(--mut)', fontWeight: 400 }}> · you</span>}
+          <div key={m.membershipId}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '9px 0',
+                borderBottom: resetIssued?.membershipId === m.membershipId ? 'none' : '1px solid var(--bd)',
+                opacity: m.status === 'deactivated' ? 0.55 : 1,
+              }}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 500 }}>
+                  {m.name || m.email}
+                  {m.isSelf && <span style={{ color: 'var(--mut)', fontWeight: 400 }}> · you</span>}
+                </div>
+                <div style={{ color: 'var(--mut)', fontSize: 11, marginTop: 1 }}>
+                  {m.name ? `${m.email} · ` : ''}
+                  {m.lastLoginAt
+                    ? `last signed in ${new Date(m.lastLoginAt).toLocaleDateString()}`
+                    : 'never signed in'}
+                </div>
               </div>
-              <div style={{ color: 'var(--mut)', fontSize: 11, marginTop: 1 }}>
-                {m.name ? `${m.email} · ` : ''}
-                {m.lastLoginAt
-                  ? `last signed in ${new Date(m.lastLoginAt).toLocaleDateString()}`
-                  : 'never signed in'}
-              </div>
+
+              <Badge color={STATUS_COLOR[m.status] ?? '#6b7382'}>{m.status}</Badge>
+
+              {canUpdate && m.status !== 'deactivated' ? (
+                <select
+                  value={m.roleKey}
+                  disabled={pending || (m.roleKey === 'owner' && !isOwner)}
+                  onChange={(e) =>
+                    run(
+                      () => changeRoleAction(m.membershipId, e.target.value),
+                      `${m.name || m.email} is now ${e.target.value}`,
+                    )
+                  }
+                  style={{ ...inputStyle, width: 128, height: 28 }}
+                >
+                  {assignableRoles
+                    .filter((r) => r.key !== 'owner' || isOwner || m.roleKey === 'owner')
+                    .map((r) => (
+                      <option key={r.key} value={r.key}>
+                        {r.name}
+                      </option>
+                    ))}
+                </select>
+              ) : (
+                <span style={{ fontSize: 11.5, color: 'var(--mut)', width: 128 }}>{m.roleName}</span>
+              )}
+
+              {canUpdate && m.status !== 'deactivated' && !m.isSelf && (m.roleKey !== 'owner' || isOwner) && (
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => resetPassword(m.membershipId)}
+                  style={{ ...chipButtonStyle, fontFamily: 'inherit' }}
+                >
+                  Reset password
+                </button>
+              )}
+
+              {canDeactivate && !m.isSelf && (
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() =>
+                    run(
+                      () => setMemberActiveAction(m.membershipId, m.status === 'deactivated'),
+                      m.status === 'deactivated'
+                        ? `${m.name || m.email} reactivated`
+                        : `${m.name || m.email} deactivated — seat freed`,
+                    )
+                  }
+                  style={{ ...chipButtonStyle, fontFamily: 'inherit' }}
+                >
+                  {m.status === 'deactivated' ? 'Reactivate' : 'Deactivate'}
+                </button>
+              )}
             </div>
 
-            <Badge color={STATUS_COLOR[m.status] ?? '#6b7382'}>{m.status}</Badge>
-
-            {canUpdate && m.status !== 'deactivated' ? (
-              <select
-                value={m.roleKey}
-                disabled={pending || (m.roleKey === 'owner' && !isOwner)}
-                onChange={(e) =>
-                  run(
-                    () => changeRoleAction(m.membershipId, e.target.value),
-                    `${m.name || m.email} is now ${e.target.value}`,
-                  )
-                }
-                style={{ ...inputStyle, width: 128, height: 28 }}
-              >
-                {assignableRoles
-                  .filter((r) => r.key !== 'owner' || isOwner || m.roleKey === 'owner')
-                  .map((r) => (
-                    <option key={r.key} value={r.key}>
-                      {r.name}
-                    </option>
-                  ))}
-              </select>
-            ) : (
-              <span style={{ fontSize: 11.5, color: 'var(--mut)', width: 128 }}>{m.roleName}</span>
-            )}
-
-            {canDeactivate && !m.isSelf && (
-              <button
-                type="button"
-                disabled={pending}
-                onClick={() =>
-                  run(
-                    () => setMemberActiveAction(m.membershipId, m.status === 'deactivated'),
-                    m.status === 'deactivated'
-                      ? `${m.name || m.email} reactivated`
-                      : `${m.name || m.email} deactivated — seat freed`,
-                  )
-                }
-                style={{ ...chipButtonStyle, fontFamily: 'inherit' }}
-              >
-                {m.status === 'deactivated' ? 'Reactivate' : 'Deactivate'}
-              </button>
+            {resetIssued?.membershipId === m.membershipId && (
+              <div style={{ paddingBottom: 10, borderBottom: '1px solid var(--bd)' }}>
+                <InviteLink
+                  kind="reset"
+                  issued={resetIssued}
+                  onDismiss={() => setResetIssued(null)}
+                />
+              </div>
             )}
           </div>
         ))}
@@ -354,21 +390,24 @@ function SeatMeter({ seats }: { seats: SeatUsage }) {
 }
 
 /**
- * The invitation link, shown once.
+ * The invitation or password-reset link, shown once.
  *
  * Only a hash of the token is stored, so this cannot be recovered afterwards —
  * the same treatment API keys get, and for the same reason. If it is lost, the
- * admin re-invites, which supersedes the old link.
+ * admin issues another, which supersedes it.
  *
  * The link is shown WHETHER OR NOT the email went out. A send that quietly
- * failed, behind a panel implying the invitation is on its way, is worse than
- * no email at all — so the admin always has something they can paste into a
- * message themselves.
+ * failed, behind a panel implying it is on its way, is worse than no email at
+ * all — so the admin always has something they can paste into a message
+ * themselves, which is the whole point on a standalone install with no mail
+ * server at all.
  */
 function InviteLink({
+  kind = 'invite',
   issued,
   onDismiss,
 }: {
+  kind?: 'invite' | 'reset'
   issued: { email: string; url: string; expiresAt: string; emailed: boolean }
   onDismiss: () => void
 }) {
@@ -400,12 +439,17 @@ function InviteLink({
       <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 4 }}>
         {issued.emailed
           ? `Emailed to ${issued.email}. The link below is the same one — keep it in case the message does not arrive.`
-          : `Send this link to ${issued.email}`}
+          : kind === 'reset'
+            ? `Give this link to ${issued.email} to set a new password`
+            : `Send this link to ${issued.email}`}
       </div>
       <div style={{ color: 'var(--mut)', fontSize: 11, marginBottom: 9, lineHeight: 1.5 }}>
         It is shown once and cannot be retrieved again — only a hash is stored. Valid until{' '}
-        {new Date(issued.expiresAt).toLocaleDateString()}. Anyone holding it can join as{' '}
-        {issued.email}, so send it the way you would send a password.
+        {new Date(issued.expiresAt).toLocaleString()}.{' '}
+        {kind === 'reset'
+          ? `Anyone holding it can set a new password for ${issued.email}`
+          : `Anyone holding it can join as ${issued.email}`}
+        , so send it the way you would send a password.
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
         <input

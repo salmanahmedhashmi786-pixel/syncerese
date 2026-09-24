@@ -34,15 +34,19 @@ import { passwordChangedEmail, passwordResetEmail } from '@/email/templates'
  */
 
 /** Long enough to walk to a laptop, short enough that a link left in a mailbox
- *  is not a standing key to the account. */
-const TOKEN_TTL_MINUTES = 60
+ *  is not a standing key to the account. Exported: an administrator issuing a
+ *  reset directly (src/server/members.ts) uses the same lifetime. */
+export const TOKEN_TTL_MINUTES = 60
 
 /** Per network, per hour. Generous for a household or an office behind one
  *  address, mean enough that enumerating a list of addresses is slow. */
 const RATE_LIMIT = 10
 const RATE_WINDOW = '1 hour'
 
-const hashToken = (token: string): string => hashOpaqueToken(`pwreset:${token}`)
+/** Exported for the same reason as `TOKEN_TTL_MINUTES`: an admin-issued reset
+ *  (src/server/members.ts) writes into the same `password_reset_tokens` table
+ *  and must hash its token the same way, or `completeReset` cannot find it. */
+export const hashToken = (token: string): string => hashOpaqueToken(`pwreset:${token}`)
 
 export type ResetRequest = {
   email: string

@@ -7,6 +7,7 @@ import { AppError, forbidden, fromDatabaseError, notFound } from '@/lib/errors'
 import { newId } from '@/lib/ids'
 import { writeAudit } from '@/lib/audit'
 import { generateToken, hashOpaqueToken, hashPassword } from '@/auth/password'
+import { hashToken as hashResetToken, TOKEN_TTL_MINUTES as RESET_TTL_MINUTES } from '@/auth/password-reset'
 import { ROLE_KEYS, type RoleKey } from '@/auth/permissions'
 import type { RequestContext } from './context'
 import { requirePermission } from './context'
@@ -464,6 +465,81 @@ export async function setMemberActive(
     after: { status: active ? 'active' : 'deactivated', email: current.email },
     requestId: ctx.requestId,
   })
+}
+
+export type PasswordResetIssued = {
+  email: string
+  /** The plaintext token, returned EXACTLY ONCE — same treatment invitations
+   *  and API keys get, and for the same reason: only its hash is stored. */
+  token: string
+  expiresAt: string
+}
+
+/**
+ * Issues a password reset for another member, for an owner or admin to hand
+ * over directly.
+ *
+ * WHY THIS EXISTS: the self-service flow at /forgot-password needs a mail
+ * server, and the standalone desktop install has none — SMTP is simply not
+ * configurable offline. Without this, a forgotten password there is a dead
+ * end with no support line to call. An administrator who can already see this
+ * person's name in this list can reset their password and read them the link
+ * face to face, the same way an invitation link is handed over today.
+ *
+ * This is not desktop-only. A hosted admin locked out of SMTP, or one who
+ * would simply rather not wait on an email, gets the same escape hatch.
+ *
+ * Shares `password_reset_tokens` with the self-service flow — same table,
+ * same hash, same TTL — so `completeReset` cannot tell the two apart and
+ * needs no changes to accept either.
+ */
+export async function adminResetPassword(
+  tx: TenantTx,
+  ctx: RequestContext,
+  membershipId: string,
+): Promise<PasswordResetIssued> {
+  requirePermission(ctx, 'member.update')
+
+  const current = await memberOf(tx, ctx.organizationId, membershipId)
+
+  // Same rule changeRole applies to a role change: an admin resetting an
+  // owner's password is a route to their account that a plain role change
+  // already refuses.
+  if (current.roleKey === 'owner' && ctx.role !== 'owner') {
+    throw forbidden('Only an owner can reset another owner’s password.')
+  }
+
+  const token = generateToken(32)
+  const expiresAt = new Date(Date.now() + RESET_TTL_MINUTES * 60_000)
+
+  // Through the function, not an INSERT — the application role has no
+  // privilege on password_reset_tokens at all, matching the self-service path
+  // in src/auth/password-reset.ts. No ipHash: this was not triggered by a
+  // request from the recipient's network, so there is nothing to rate-limit.
+  await tx.execute(sql`
+    select public.issue_password_reset(
+      ${newId()}::uuid, ${current.userId}::uuid, ${hashResetToken(token)}, null
+    )
+  `)
+
+  await writeAudit(tx, {
+    organizationId: ctx.organizationId,
+    actorUserId: ctx.userId,
+    action: 'member.password_reset_issued',
+    entityType: 'membership',
+    entityId: membershipId,
+    // The token is deliberately absent — see member.invited above.
+    after: { email: current.email },
+    requestId: ctx.requestId,
+  })
+
+  return { email: current.email, token, expiresAt: expiresAt.toISOString() }
+}
+
+/** Builds the link an admin hands over. Mirrors invitationUrl above — same
+ *  reasoning: the origin this request arrived on, never a hard-coded host. */
+export function resetPasswordUrl(origin: string, token: string): string {
+  return `${origin.replace(/\/+$/, '')}/reset-password?token=${encodeURIComponent(token)}`
 }
 
 async function memberOf(tx: TenantTx, organizationId: string, membershipId: string) {
